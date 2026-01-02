@@ -15,6 +15,7 @@ export default function Attendance() {
   const [facultyCode, setFacultyCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [popupMessage, setPopupMessage] = useState(false);
 
 
   // Get current weekday
@@ -151,6 +152,13 @@ export default function Attendance() {
   const absentees = students.filter((s) => s.status === 'absent');
   const lateComers = students.filter((s) => s.status === 'late');
 
+  function handlefacultyCodeChange() {
+    if (!isFreeHour){
+      setPopupMessage(true);
+    } else {
+      handleSubmit();
+    } 
+  }
   // Submit attendance
   async function handleSubmit() {
     if (!selectedSlot) {
@@ -158,7 +166,7 @@ export default function Attendance() {
       return;
     }
 
-    if (!facultyCode.trim()) {
+    if (!facultyCode.trim() && !isFreeHour) {
       alert('Please enter faculty code');
       return;
     }
@@ -191,6 +199,7 @@ export default function Attendance() {
         : timetableSlots.find(slot => slot.course_code === selectedCourse) || selectedSlot;
 
       // Verify with faculty code
+      if (!isFreeHour) {
       const verifyResponse = await fetch(`${API_URL}/api/faculty/verify`, {
         method: 'PUT',
         headers: {
@@ -200,14 +209,16 @@ export default function Attendance() {
         body: JSON.stringify({
           token: facultyCode,
           timetable_id: verificationSlot.id // ✅ Send the timetable ID of actual course
-        })
+        })  
       });
 
       if (!verifyResponse.ok) {
         const errorData = await verifyResponse.json();
         throw new Error(errorData.error || 'Invalid faculty code');
       }
-
+      setPopupMessage(false);
+      }
+      if (verifyResponse){
       // Submit attendance
        const response = await fetch(`${API_URL}/api/cr/attendance`, {
         method: 'POST',
@@ -223,9 +234,11 @@ export default function Attendance() {
           is_free: isFreeHour
         })
       });
-
-      alert('Attendance Submitted and Verified Successfully!');
-      
+      if (!response.ok) {
+        alert('Failed to submit attendance');
+        throw new Error('Failed to submit attendance');
+      }
+      alert('Attendance Submitted and Verified Successfully!');      
       // Reset form
       setFacultyCode('');
       setIsFreeHour(false);
@@ -233,7 +246,7 @@ export default function Attendance() {
         setSelectedCourse(selectedSlot.course_code);
       }
       setStudents(prev => prev.map(s => ({ ...s, status: 'present' })));
-
+    }
     } catch (err) {
       setError(err.message);
       alert(`Error: ${err.message}`);
@@ -248,6 +261,35 @@ export default function Attendance() {
       {error && <div className="error-message">{error}</div>}
       {loading && <div className="loading-overlay">Loading...</div>}
       
+      
+      {popupMessage && 
+      <div style={popupOverlayStyle}>
+        <div style={popupContentStyle}>
+          <div style={popupHeaderStyle}>
+            <h2 style={{ color: 'white', margin: 0, fontSize: '20px', fontWeight: '600' }}>Faculty Code</h2>
+          </div>
+          <div className="popup">
+          <label className="label">
+            Faculty Code
+            <input
+              type="password"
+              placeholder="Enter faculty code"
+              value={facultyCode}
+              onChange={(e) => setFacultyCode(e.target.value)}
+              className="input"
+              autoComplete="off"
+            />
+          </label>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', padding: '0 24px 24px 24px' }}>
+            <button style={popupCloseBtnStyle} onClick={() => setPopupMessage(false)}>Cancel</button>
+            <button style={popupCloseBtnStyle} onClick={() => handleSubmit()}>OK</button>
+          </div>
+        </div>
+      </div>
+      }
+
+
       <div className="attendance-wrapper">
         {/* LEFT PANEL */}
         <div className="left-panel">
@@ -266,7 +308,7 @@ export default function Attendance() {
                 ) : (
                   students.map((st) => (
                     <tr
-                      style={{ minWidth: '70px' }}
+                      style={{ minWidth: '94px' }}
                       key={st.id}
                       className={`row ${st.status}`}
                       onClick={() => toggleAttendance(st.id)}
@@ -289,17 +331,6 @@ export default function Attendance() {
 
         {/* RIGHT PANEL */}
         <div className="right-panel">
-          <label className="label">
-            Faculty Code
-            <input
-              type="password"
-              placeholder="Enter faculty code"
-              value={facultyCode}
-              onChange={(e) => setFacultyCode(e.target.value)}
-              className="input"
-              autoComplete="off"
-            />
-          </label>
 
           <label className="label">
             Select Current Period
@@ -313,7 +344,7 @@ export default function Attendance() {
               ) : (
                 todaySlots.map((slot) => (
                   <option key={slot.id} value={slot.id}>
-                    Slot {slot.slot_number} - {slot.course_name} ({slot.course_code})
+                    Period {slot.slot_number} - {slot.course_name} ({slot.course_code})
                   </option>
                 ))
               )}
@@ -383,13 +414,13 @@ export default function Attendance() {
           </div>
 
           {/* ABSENTEES */}
-          <div className="absentees">
+          <div className="late-box">
             <h4>Absentees</h4>
             {absentees.length === 0 ? (
               <p className="none">None</p>
             ) : (
               absentees.map((s) => (
-                <div key={s.id} className="absent-name">
+                <div key={s.id} className="late-name">
                   {s.roll_number?.slice(-3) || s.roll_number}
                 </div>
               ))
@@ -398,8 +429,8 @@ export default function Attendance() {
 
           <button 
             className="submit-btn" 
-            onClick={handleSubmit}
-            disabled={loading || !selectedSlot || !facultyCode.trim() || (!isFreeHour && !selectedCourse)}
+            onClick={() => handlefacultyCodeChange()}
+            disabled={loading || !selectedSlot}
           >
             {loading ? 'Submitting...' : 'Submit Attendance'}
           </button>
@@ -408,3 +439,28 @@ export default function Attendance() {
     </div>
   );
 }
+
+
+const popupOverlayStyle = {
+  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+  backgroundColor: 'rgba(0, 0, 0, 0.5)', display: 'flex', 
+  flexDirection: 'column',
+  alignItems: 'center', justifyContent: 'center', zIndex: 1000
+};
+
+const popupContentStyle = {
+  backgroundColor: 'white', borderRadius: '8px',
+  boxShadow: '0 4px 20px rgba(0,0,0,0.3)', maxWidth: '400px',
+  width: '90%', overflow: 'hidden'
+};
+
+const popupHeaderStyle = {
+  backgroundColor: '#a33232', padding: '16px 24px',
+  display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+};
+
+const popupCloseBtnStyle = {
+  width: '100%', padding: '12px', backgroundColor: '#a33232',
+  color: 'white', border: 'none', borderRadius: '6px',
+  fontSize: '16px', fontWeight: '500', cursor: 'pointer'
+};

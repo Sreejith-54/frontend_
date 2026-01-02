@@ -1,7 +1,6 @@
 .attendance-page {
   font-family: Arial, Helvetica, sans-serif;
   padding: 0px;
-  min-height: 100vh;
   margin: 40px;
   position: relative;
 }
@@ -62,11 +61,12 @@
 }
 
 .grid {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 2px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(94px, max-content));
+  justify-content: center;
+  justify-items: start;
 }
+
 
 .row {
   cursor: pointer;
@@ -133,7 +133,7 @@
 }
 
 .right-panel {
-  width: 240px;
+  width: 300px;
   background: #f0f0f0;
   padding: 12px;
   border-radius: 6px;
@@ -182,6 +182,7 @@
   cursor: pointer;
 }
 
+
 .submit-btn:disabled {
   background: #6b8bb8;
   cursor: not-allowed;
@@ -201,27 +202,41 @@
   background: #fee2e2;
 }
 
+
+
 /* LATE COMERS BOX */
 .late-box {
-  background: #D9D9D9;
+  background: #ffffff;
+  border: 1px solid #ccc;
   border-radius: 8px;
   padding: 12px;
   margin-top: 12px;
-  display: flex;
-  flex-wrap: wrap;
+  max-height: 202px;
+  overflow-y: auto;
+
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px 14px;
+
+  justify-content: center;
+;
 }
 
 .late-box h4 {
-  width: 100%;
+  grid-column: 1 / -1;
 }
 
 .late-name {
-  background: #D9D9D9;
-  padding: 1px 5px;
-  width: 40%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  padding: 4px 10px;
+  border: 1px solid #ccc;
   border-radius: 6px;
-  margin-bottom: 6px;
-  font-size: 14px;
+
+  font-size: 16px;
+  font-weight: 700;
 }
 
 /* ERROR & LOADING */
@@ -271,6 +286,36 @@
   color: #333;
 }
 
+.popup {
+ padding: 24px;
+ display: flex;
+ flex-direction: column;
+ gap: 16px;
+}
+
+.popup .input {
+  margin: 10px;
+  width: 100%;
+  padding: 15px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.popup .input:focus {
+  outline: none;
+  border-color: #0b4daf;
+}
+
+.popup .label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 600;
+  color: #333;
+}
+
+
 /* ============================================ */
 /* MOBILE RESPONSIVE STYLES */
 /* ============================================ */
@@ -299,6 +344,7 @@
 
   .attendance-wrapper {
     flex-direction: column-reverse;
+    margin: auto;
     gap: 15px;
   }
 
@@ -330,11 +376,6 @@
   .absentees,
   .late-box {
     gap: 8px;
-  }
-
-  .absent-name,
-  .late-name {
-    width: 45%;
   }
 }
 
@@ -420,9 +461,9 @@
 
   .absent-name,
   .late-name {
-    width: 48%;
     font-size: 13px;
     padding: 4px;
+    margin: 0;
   }
 
   .error-message {
@@ -449,11 +490,6 @@
 
   .row td span:last-child {
     font-size: large !important;
-  }
-
-  .absent-name,
-  .late-name {
-    width: 100%;
   }
 
   .icon div {
