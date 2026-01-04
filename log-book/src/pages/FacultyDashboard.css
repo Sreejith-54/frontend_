@@ -1,0 +1,281 @@
+/* Dashboard Container */
+.dashboard-container {
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Header */
+.dashboard-header {
+  background-color: #AD3A3C;
+  color: white;
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-logo {
+  height: 3rem;
+}
+
+.header-nav {
+  display: flex;
+  gap: 2.5rem;
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+
+.nav-link {
+  padding: 0.25rem 1rem;
+  border-radius: 1rem;
+}
+
+.nav-link:hover {
+  background-color: #7b2224;
+  cursor: pointer;
+}
+
+/* Content Blur */
+.content-blurred {
+  transition: all 0.3s;
+  filter: blur(4px);
+  pointer-events: none;
+}
+
+/* Main Content */
+.main-content {
+  padding: 2rem;
+}
+
+/* Class Controls */
+.class-controls {
+  background-color: rgb(229, 231, 235);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  display: flex;
+  gap: 2.5rem;
+}
+
+.control-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.control-label {
+  font-size: 1.5rem;
+  font-weight: 600;
+  padding: 1rem;
+}
+
+.control-select {
+  padding: 0.75rem 1rem;
+  background-color: white;
+  border: 1px solid black;
+  font-size: 1.25rem;
+}
+
+.report-button {
+  padding: 0.75rem 1.5rem;
+  background-color: white;
+  font-size: 1.125rem;
+  border: 1px solid black;
+}
+
+.report-button:hover {
+  background-color: rgb(249, 250, 251);
+}
+
+/* Table Toolbar */
+.table-toolbar {
+  width: 100%;
+  margin-bottom: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Search */
+.search-container {
+  position: relative;
+}
+
+.search-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgb(156, 163, 175);
+}
+
+.search-input {
+  padding-left: 2.5rem;
+  padding-right: 1rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  border: 1px solid rgb(156, 163, 175);
+  border-radius: 0.375rem;
+  font-size: 1.125rem;
+}
+
+/* Toolbar Filters */
+.toolbar-filters {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.5rem 1rem;
+}
+
+/* Date Range */
+.date-range {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.date-input {
+  padding: 0.5rem;
+  border: 1px solid rgb(156, 163, 175);
+  border-radius: 0.375rem;
+  font-size: 1.125rem;
+}
+
+.date-separator {
+  font-size: 1.125rem;
+  font-weight: 500;
+}
+
+/* Defaulters Filter */
+.defaulters-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.125rem;
+  cursor: pointer;
+}
+
+/* Table */
+.table-container {
+  border: 2px solid black;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.students-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-header {
+  background-color: rgb(229, 231, 235);
+  position: sticky;
+  top: 0;
+}
+
+.table-cell {
+  border: 2px solid black;
+  padding: 1rem 1.5rem;
+}
+
+/* Attendance Badges */
+.attendance-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.25rem;
+}
+
+.attendance-low {
+  background-color: rgb(254, 202, 202);
+  color: rgb(127, 29, 29);
+}
+
+.attendance-medium {
+  background-color: rgb(254, 215, 170);
+  color: rgb(120, 53, 15);
+}
+
+.attendance-high {
+  background-color: rgb(187, 247, 208);
+  color: rgb(20, 83, 45);
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+  position: relative;
+  width: 80%;
+  max-height: 75%;
+  background-color: white;
+  border: 2px solid black;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.modal-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+/* Periods Grid */
+.periods-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .periods-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Period Cards */
+.period-card {
+  border: 2px solid;
+  padding: 1rem;
+}
+
+.period-completed {
+  border-color: rgb(22, 163, 74);
+}
+
+.period-default {
+  border-color: rgb(156, 163, 175);
+}
+
+.period-course {
+  font-weight: bold;
+}
+
+.period-time {
+  color: rgb(75, 85, 99);
+}
+
+.status-completed {
+  color: rgb(21, 128, 61);
+  margin-top: 0.25rem;
+}
+
+.status-upcoming {
+  color: rgb(107, 114, 128);
+  margin-top: 0.25rem;
+}
