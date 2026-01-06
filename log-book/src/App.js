@@ -3,6 +3,10 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import StudentListPage from "./pages/StudentListPage/StudentListPage";
 import StudentReport from "./pages/StudentReportPage";
+import FacultyDashboard from './pages/Faculty/FacultyDashboard';
+import ClassStatus from './pages/ClassStatus';
+import SubjectWiseReport from './pages/SubjectWiseReport/SubjectWiseReport';
+import MainLayout from './components/MainLayout';
 
 const candid = {
   StudentName: "John Doe",
@@ -14,19 +18,25 @@ function App() {
     <BrowserRouter>
       <div className="App">
         <Routes>
-          {/* YOUR PAGE */}
-          <Route path="/" element={<StudentListPage />} />
+          <Route path="/cr" element={<MainLayout />}>
+            <Route path="attendance" element={<ClassStatus />} />
+          </Route>
 
-          {/* REPORT PAGE */}
-          <Route
-            path="/student-report"
-            element={
-              <StudentReport
-                StudentName={candid.StudentName}
-                RollNo={candid.RollNo}
-              />
-            }
-          />
+          <Route path="/admin" element={<MainLayout />}>
+            <Route index element={<FacultyDashboard />} /> 
+            <Route path="attendance" element={<ClassStatus />} />
+            <Route path="studentlist" element={<StudentListPage />} />
+            <Route
+              path="student-report"
+              element={
+                <StudentReport
+                  StudentName={candid.StudentName}
+                  RollNo={candid.RollNo}
+                />
+              }
+            />
+            <Route path="subject-report" element={<SubjectWiseReport />} />
+          </Route>
         </Routes>
       </div>
     </BrowserRouter>
