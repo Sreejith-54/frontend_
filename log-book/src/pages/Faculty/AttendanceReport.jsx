@@ -4,7 +4,7 @@ import Logo from '../assets/logo.png'
 import './AttendanceReport.css'
 import { Link } from "react-router-dom"
 
-function FacultyDashboard() {
+function AttendanceReport() {
   const [selectedClass, setSelectedClass] = useState('')
   const [selectedCourse, setSelectedCourse] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
@@ -180,5 +180,6 @@ function FacultyDashboard() {
   )
 }
 
-export default FacultyDashboard
+export default AttendanceReport
+
 
