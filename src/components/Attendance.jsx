@@ -16,6 +16,8 @@ export default function Attendance() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [popupMessage, setPopupMessage] = useState(false);
+  const [alert, setAlert] = useState(0);
+  const [alertmessage, setAlertmessage] = useState('');
 
 
   // Get current weekday
@@ -31,6 +33,7 @@ export default function Attendance() {
     fetchStudents();
     fetchTimetable();
   }, []);
+
 
   // Filter today's slots when timetable is loaded
   useEffect(() => {
@@ -151,7 +154,12 @@ export default function Attendance() {
   // Filters
   const absentees = students.filter((s) => s.status === 'absent');
   const lateComers = students.filter((s) => s.status === 'late');
+  function handlealert(){
+    setAlert(0);
+    setAlertmessage('');
+    setPopupMessage(false);
 
+  }
   function handlefacultyCodeChange() {
     if (!isFreeHour){
       setPopupMessage(true);
@@ -216,9 +224,7 @@ export default function Attendance() {
         const errorData = await verifyResponse.json();
         throw new Error(errorData.error || 'Invalid faculty code');
       }
-      setPopupMessage(false);
       }
-      if (verifyResponse){
       // Submit attendance
        const response = await fetch(`${API_URL}/api/cr/attendance`, {
         method: 'POST',
@@ -235,18 +241,22 @@ export default function Attendance() {
         })
       });
       if (!response.ok) {
-        alert('Failed to submit attendance');
+        setAlert(1);
+        setAlertmessage('Attendance has already been marked for this slot');
+        setPopupMessage(true);
         throw new Error('Failed to submit attendance');
       }
-      alert('Attendance Submitted and Verified Successfully!');      
+      setAlert(1);
+      setAlertmessage('Attendance added successfully');
       // Reset form
       setFacultyCode('');
       setIsFreeHour(false);
       if (selectedSlot) {
         setSelectedCourse(selectedSlot.course_code);
       }
+      setPopupMessage(true);
       setStudents(prev => prev.map(s => ({ ...s, status: 'present' })));
-    }
+    
     } catch (err) {
       setError(err.message);
       alert(`Error: ${err.message}`);
@@ -266,11 +276,12 @@ export default function Attendance() {
       <div style={popupOverlayStyle}>
         <div style={popupContentStyle}>
           <div style={popupHeaderStyle}>
-            <h2 style={{ color: 'white', margin: 0, fontSize: '20px', fontWeight: '600' }}>Faculty Code</h2>
+            {alert == 0 && (<h2 style={{ color: 'white', margin: 0, fontSize: '20px', fontWeight: '600' }}>Faculty Code</h2>)}
           </div>
           <div className="popup">
-          <label className="label">
-            Faculty Code
+          {alert == 0 
+          ?(<div>
+            <label className="label">
             <input
               type="password"
               placeholder="Enter faculty code"
@@ -281,9 +292,19 @@ export default function Attendance() {
             />
           </label>
           </div>
+          )
+          :(<h3>{alertmessage}</h3>)
+          }
+          </div>
           <div style={{ display: 'flex', gap: '10px', padding: '0 24px 24px 24px' }}>
-            <button style={popupCloseBtnStyle} onClick={() => setPopupMessage(false)}>Cancel</button>
-            <button style={popupCloseBtnStyle} onClick={() => handleSubmit()}>OK</button>
+            {alert==0 
+              ?(<button style={popupCloseBtnStyle} onClick={() => handlealert()}>Cancel</button>)
+              :(<button style={popupCloseBtnStyle} onClick={() => handlealert()}>OK</button>)
+            }
+            {alert == 0 &&
+             (
+              <button style={popupCloseBtnStyle} onClick={() => handleSubmit()}>OK</button>
+             )}
           </div>
         </div>
       </div>

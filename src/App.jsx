@@ -3,10 +3,8 @@ import { AuthProvider, useAuth } from './pages/Login/AuthContext.jsx'; // Ensure
 
 import AdminDashboard from "./pages/Admin/AdminDashboard.jsx";
 import StudentReport from "./pages/StudentReportPage/StudentReportPage.jsx";
-import FacultyDashboard from './pages/Faculty/FacultyDashboard.jsx';
 import SubjectWiseReport from './pages/SubjectWiseReport/SubjectWiseReport.jsx';
 import Cr from './components/Attendance.jsx';
-import AttendanceReport from './pages/Faculty/AttendanceReport.jsx';
 import MainLayout from './components/MainLayout.jsx';
 import Login from './pages/Login/Login.jsx';
 
@@ -59,7 +57,6 @@ function App() {
               }
             >
               <Route index element={<AdminDashboard />} />
-              <Route path="attendance" element={<AttendanceReport />} />
             </Route>
 
             {/* ADMIN ROUTES */}
