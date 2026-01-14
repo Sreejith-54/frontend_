@@ -1,0 +1,23 @@
+label{
+    font-weight: 100;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+input{
+    padding: 1vh;
+    border-radius: 5vh;
+}
+.login-container{
+    width:60vw;
+}
+.login-container form{
+    width: 80%;
+}
+
+@media screen and (max-width: 600px) {
+    .login-container{
+        width: 90vw;
+    } 
+    .login-container form{
+        width: 100%;
+    }
+}

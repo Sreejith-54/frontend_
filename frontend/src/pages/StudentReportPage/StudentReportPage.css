@@ -1,0 +1,15 @@
+@media screen and (max-width: 700px) {
+  .opt {
+    flex-direction: column;
+    gap: 2vh;
+    align-items:  center;
+  }
+  .opt>button{
+    padding: 1vh 50%;
+  }
+  
+}
+
+.opt>div{
+  margin: 0px 20px;
+}
