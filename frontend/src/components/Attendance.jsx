@@ -1,76 +1,56 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '..';
+import { useAuth } from '../pages/Login/AuthContext';
 import './Attendance.css';
 
 export default function Attendance() {
   const API_URL = import.meta.env.VITE_API_URL;
   const { token } = useAuth();
   
-  const [klass, setKlass] = useState('');
-  const [facultyCode, setFacultyCode] = useState('');
   const [students, setStudents] = useState([]);
-  const [courses, setCourses] = useState([]);
-  const [selectedTimetableId, setSelectedTimetableId] = useState(null);
+  const [timetableSlots, setTimetableSlots] = useState([]);
+  const [todaySlots, setTodaySlots] = useState([]);
+  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [selectedCourse, setSelectedCourse] = useState('');
+  const [isFreeHour, setIsFreeHour] = useState(false);
+  const [facultyCode, setFacultyCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [timetable, setTimeTable] = useState('Show');
-  const [sessionId, setSessionId] = useState(null);
 
-  // Fetch courses on component mount
+
+  // Get current weekday
+  const getCurrentDay = () => {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const today = new Date().getDay();
+    return { short: days[today], full: dayNames[today] };
+  };
+
+  // Fetch students and timetable on mount
   useEffect(() => {
-    fetchCourses();
+    fetchStudents();
+    fetchTimetable();
   }, []);
 
-  // Fetch students when course/timetable is selected
+  // Filter today's slots when timetable is loaded
   useEffect(() => {
-    if (selectedTimetableId) {
-      fetchStudents(selectedTimetableId);
+    if (timetableSlots.length > 0) {
+      filterTodaySlots();
     }
-  }, [selectedTimetableId]);
+  }, [timetableSlots]);
 
-  // Fetch CR's courses
-  async function fetchCourses() {
+  // Fetch students by student ID
+  async function fetchStudents() {
     try {
       setLoading(true);
       setError('');
-      const response = await fetch(`${API_URL}/api/cr/my-courses`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (!response.ok) throw new Error('Failed to fetch courses');
-      
-      const data = await response.json();
-      setCourses(data);
-      
-      // Set first course as default
-      if (data.length > 0) {
-        setKlass(data[0].course_code);
-      }
-    } catch (err) {
-      setError(err.message);
-      console.error('Error fetching courses:', err);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // Fetch students for selected timetable
-  async function fetchStudents(ttId) {
-    try {
-      setLoading(true);
-      setError('');
-      const response = await fetch(`${API_URL}/api/cr/students-by-timetable/${ttId}`, {
+      const response = await fetch(`${API_URL}/api/cr/students-by-studentid`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
       
       if (!response.ok) throw new Error('Failed to fetch students');
-      
       const data = await response.json();
-      // Initialize all students as present
       const studentsWithStatus = data.map(student => ({
         ...student,
         status: 'present'
@@ -84,16 +64,50 @@ export default function Attendance() {
     }
   }
 
-  // Handle course selection - you'll need to implement logic to get timetable_id
-  // This is a simplified version - you may need to fetch timetable data or pass it differently
-  function handleCourseChange(courseCode) {
-    setKlass(courseCode);
-    // TODO: You need to determine the timetable_id for this course
-    // This might require an additional API call or timetable selection UI
-    // For now, you'll need to implement this based on your timetable structure
+  // Fetch timetable for the section
+  async function fetchTimetable() {
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_URL}/api/common/timetable-by-class`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Failed to fetch timetable');
+      
+      const data = await response.json();
+      setTimetableSlots(data);
+    } catch (err) {
+      setError(err.message);
+      console.error('Error fetching timetable:', err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Filter slots for today
+  function filterTodaySlots() {
+    const currentDay = getCurrentDay().short;
+    const todaySlotsData = timetableSlots
+      .filter(slot => slot.day === currentDay)
+      .sort((a, b) => a.slot_number - b.slot_number);
     
-    // Example placeholder - replace with actual logic:
-    // setSelectedTimetableId(some_timetable_id_for_this_course);
+    setTodaySlots(todaySlotsData);
+    
+    // Auto-select first slot if available
+    if (todaySlotsData.length > 0) {
+      setSelectedSlot(todaySlotsData[0]);
+      setSelectedCourse(todaySlotsData[0].course_code);
+    }
+  }
+
+  // Handle slot selection (current period)
+  function handleSlotChange(slotId) {
+    const slot = todaySlots.find(s => s.id === parseInt(slotId));
+    setSelectedSlot(slot);
+    setSelectedCourse(slot?.course_code || '');
+    setIsFreeHour(false);
   }
 
   // Toggle attendance status
@@ -114,20 +128,33 @@ export default function Attendance() {
     );
   }
 
+  // Handle free hour toggle
+  function handleFreeHourToggle(checked) {
+    setIsFreeHour(checked);
+    if (checked) {
+      // Reset to scheduled course when marking as free
+      if (selectedSlot) {
+        setSelectedCourse(selectedSlot.course_code);
+      }
+    }
+  }
+
+  // Handle course selection change (for substitution)
+  function handleCourseChange(courseCode) {
+    setSelectedCourse(courseCode);
+  }
+
+  // Check if it's a swap (different from scheduled course)
+  const isSwap = selectedSlot && selectedCourse && selectedCourse !== selectedSlot.course_code;
+
   // Filters
   const absentees = students.filter((s) => s.status === 'absent');
   const lateComers = students.filter((s) => s.status === 'late');
 
-  function handletable() {
-    timetable === 'Show'
-      ? setTimeTable('Hide')
-      : setTimeTable('Show');
-  }
-
   // Submit attendance
   async function handleSubmit() {
-    if (!selectedTimetableId) {
-      alert('Please select a valid course/timetable slot');
+    if (!selectedSlot) {
+      alert('Please select a time slot');
       return;
     }
 
@@ -136,18 +163,33 @@ export default function Attendance() {
       return;
     }
 
+    if (!selectedCourse && !isFreeHour) {
+      alert('Please select a course');
+      return;
+    }
+
     try {
       setLoading(true);
       setError('');
 
-      // Prepare attendance records
       const records = students.map(student => ({
         id: student.id,
         status: student.status
       }));
 
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      const today = new Date().toISOString().split('T')[0];
 
+      // Determine which course to send
+      const courseToSend = isFreeHour ? selectedSlot.course_code : selectedCourse;
+      console.log(JSON.stringify(
+        {
+          timetable_id: selectedSlot.id,
+          date: today,
+          records: records,
+          selected_course_code: courseToSend,
+          is_free: isFreeHour
+        }
+      ));
       // Submit attendance
       const response = await fetch(`${API_URL}/api/cr/attendance`, {
         method: 'POST',
@@ -156,21 +198,23 @@ export default function Attendance() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          timetable_id: selectedTimetableId,
+          timetable_id: selectedSlot.id,
           date: today,
           records: records,
-          selected_course_code: klass,
-          is_free: false
+          selected_course_code: courseToSend,
+          is_free: isFreeHour
         })
+        
       });
+      
+      console.log(response);
 
       if (!response.ok) throw new Error('Failed to submit attendance');
 
       const data = await response.json();
       const newSessionId = data.sessionId;
-      setSessionId(newSessionId);
 
-      // Now verify with faculty code
+      // Verify with faculty code
       const verifyResponse = await fetch(`${API_URL}/api/faculty/verify/${newSessionId}`, {
         method: 'PUT',
         headers: {
@@ -191,7 +235,10 @@ export default function Attendance() {
       
       // Reset form
       setFacultyCode('');
-      // Optionally reset students to all present
+      setIsFreeHour(false);
+      if (selectedSlot) {
+        setSelectedCourse(selectedSlot.course_code);
+      }
       setStudents(prev => prev.map(s => ({ ...s, status: 'present' })));
 
     } catch (err) {
@@ -211,27 +258,17 @@ export default function Attendance() {
       <div className="attendance-wrapper">
         {/* LEFT PANEL */}
         <div className="left-panel">
-          <div>
-            <button 
-              onClick={() => handletable()} 
-              style={{ backgroundColor: '#AD3A3C', color: 'white', padding: '10px', marginBottom: '10px' }}
-            >
-              {`${timetable} Time Table`}
-            </button>
-          </div>
-          {timetable === 'Hide' &&
-            <div className='title'>Time Table</div>}
           <div className="table-wrapper">
-            <table className="stu-table">
-              <div className='icon' style={{ display: 'flex', gap: '10px' }}>
+            <div className='icon' style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
                 <div className='present'>Present</div>
                 <div className='absent'>Absent</div>
                 <div className='late'>Late</div>
               </div>
+            <table className="stu-table">
               <tbody className='grid'>
                 {students.length === 0 ? (
                   <tr><td colSpan="1" style={{ textAlign: 'center', padding: '20px' }}>
-                    No students found. Please select a course.
+                    No students found.
                   </td></tr>
                 ) : (
                   students.map((st) => (
@@ -272,23 +309,71 @@ export default function Attendance() {
           </label>
 
           <label className="label">
-            Select Subject
+            Select Current Period
             <select 
-              value={klass} 
-              onChange={(e) => handleCourseChange(e.target.value)}
-              disabled={courses.length === 0}
+              value={selectedSlot?.id || ''} 
+              onChange={(e) => handleSlotChange(e.target.value)}
+              disabled={todaySlots.length === 0}
             >
-              {courses.length === 0 ? (
-                <option>Loading courses...</option>
+              {todaySlots.length === 0 ? (
+                <option>No classes today</option>
               ) : (
-                courses.map((course) => (
-                  <option key={course.course_code} value={course.course_code}>
-                    {course.course_name}
+                todaySlots.map((slot) => (
+                  <option key={slot.id} value={slot.id}>
+                    Slot {slot.slot_number} - {slot.course_name} ({slot.course_code})
                   </option>
                 ))
               )}
             </select>
           </label>
+
+          {/* FREE HOUR TOGGLE */}
+          <div style={{ marginBottom: '15px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={isFreeHour}
+                onChange={(e) => handleFreeHourToggle(e.target.checked)}
+                disabled={!selectedSlot}
+              />
+              <span style={{ fontWeight: 'bold', color: '#AD3A3C' }}>Mark as Free Hour</span>
+            </label>
+          </div>
+
+          {!isFreeHour && selectedSlot && (
+            <>
+              <label className="label">
+                Actual Course Conducted (Optional - for substitution)
+                <select 
+                  value={selectedCourse} 
+                  onChange={(e) => handleCourseChange(e.target.value)}
+                  disabled={!selectedSlot}
+                >
+                  <option value="">Select Course...</option>
+                  {timetableSlots
+                    .filter((slot, index, self) => 
+                      index === self.findIndex(s => s.course_code === slot.course_code)
+                    )
+                    .sort((a, b) => a.course_name.localeCompare(b.course_name))
+                    .map((slot) => (
+                      <option key={slot.course_code} value={slot.course_code}>
+                        {slot.course_name} ({slot.course_code})
+                      </option>
+                    ))}
+                </select>
+              </label>
+
+              {isSwap && (
+                <div style={{ padding: '10px', background: '#fff3cd', borderRadius: '5px', marginBottom: '10px' }}>
+                  <strong>⚠️ Course Swap Detected</strong>
+                  <div style={{ fontSize: '0.9rem' }}>
+                    Scheduled: {selectedSlot.course_name}<br/>
+                    Conducting: {timetableSlots.find(s => s.course_code === selectedCourse)?.course_name}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
 
           {/* LATE COMERS */}
           <div className="late-box">
@@ -321,7 +406,7 @@ export default function Attendance() {
           <button 
             className="submit-btn" 
             onClick={handleSubmit}
-            disabled={loading || !selectedTimetableId || !facultyCode.trim()}
+            disabled={loading || !selectedSlot || !facultyCode.trim() || (!isFreeHour && !selectedCourse)}
           >
             {loading ? 'Submitting...' : 'Submit Attendance'}
           </button>
