@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "../utils/api";
+import * as XLSX from 'xlsx';
 
 const StudentManagement = () => {
   // Dropdown Data
@@ -17,6 +18,12 @@ const StudentManagement = () => {
   const [formData, setFormData] = useState({ roll: "", name: "", email: "" });
   const [editId, setEditId] = useState(null); // If not null, we are in edit mode
   const [loading, setLoading] = useState(false);
+
+  // Bulk Upload States
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
+  const [bulkFile, setBulkFile] = useState(null);
+  const [bulkData, setBulkData] = useState([]);
+  const [uploading, setUploading] = useState(false);
 
   // 1. Initial Load (Depts)
   useEffect(() => {
@@ -107,6 +114,7 @@ const StudentManagement = () => {
         name: student.full_name,
         email: student.email
     });
+    setShowBulkUpload(false); // Close bulk upload if open
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -124,6 +132,86 @@ const StudentManagement = () => {
   const handleCancel = () => {
       setEditId(null);
       setFormData({ roll: "", name: "", email: "" });
+  };
+
+  // 8. Bulk Upload Functions
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    setBulkFile(file);
+    const reader = new FileReader();
+    
+    reader.onload = (evt) => {
+      const data = new Uint8Array(evt.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+      
+      const formatted = jsonData.map(row => ({
+        roll: row.roll || row.Roll || row.roll_number || row.Roll_Number || "",
+        name: row.name || row.Name || row.full_name || row.Full_Name || "",
+        email: row.email || row.Email || ""
+      }));
+      
+      setBulkData(formatted);
+    };
+    
+    reader.readAsArrayBuffer(file);
+  };
+
+  const handleBulkUpload = async () => {
+    if (!selectedSection) {
+      alert("Please select Department, Batch, and Section first");
+      return;
+    }
+
+    if (bulkData.length === 0) {
+      alert("Please upload a file first");
+      return;
+    }
+
+    setUploading(true);
+    let successCount = 0;
+    let errorCount = 0;
+    const errors = [];
+
+    for (const student of bulkData) {
+      try {
+        await api.post("/admin/students", {
+          roll: student.roll,
+          name: student.name,
+          email: student.email,
+          section_id: selectedSection
+        });
+        successCount++;
+      } catch (e) {
+        errorCount++;
+        errors.push(`${student.roll}: ${e.response?.data?.error || e.message}`);
+      }
+    }
+
+    setUploading(false);
+    alert(`Students Created: ${successCount}\nFailed: ${errorCount}${errors.length > 0 ? '\n\nErrors:\n' + errors.slice(0, 5).join('\n') + (errors.length > 5 ? '\n...' : '') : ''}`);
+    
+    if (successCount > 0) {
+      fetchStudents();
+      setShowBulkUpload(false);
+      setBulkFile(null);
+      setBulkData([]);
+    }
+  };
+
+  const downloadTemplate = () => {
+    const template = [
+      { roll_number: "AM.SC.U4CSE23001", full_name: "John Raj", email: "john@students.amrita.edu" },
+      { roll_number: "AM.SC.U4CSE23003", full_name: "Ani Kumar", email: "ani@students.amrita.edu" }
+    ];
+    
+    const ws = XLSX.utils.json_to_sheet(template);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Students");
+    XLSX.writeFile(wb, "students_template.xlsx");
   };
 
   return (
@@ -155,26 +243,92 @@ const StudentManagement = () => {
 
       {selectedSection ? (
         <>
-            {/* ADD / EDIT FORM */}
-            <div style={formBox}>
-                <h4 style={{marginTop:0, color:'#AD3A3C'}}>{editId ? "Edit Student" : "Add New Student"}</h4>
-                <form onSubmit={handleSubmit} style={{display:'flex', gap:'10px', alignItems:'flex-end'}}>
-                    <div style={{flex:1}}>
-                        <label style={labelStyle}>Roll Number</label>
-                        <input style={inputStyle} value={formData.roll} onChange={e=>setFormData({...formData, roll:e.target.value})} required placeholder="e.g. AM.EN.U4CSE..." />
-                    </div>
-                    <div style={{flex:2}}>
-                        <label style={labelStyle}>Full Name</label>
-                        <input style={inputStyle} value={formData.name} onChange={e=>setFormData({...formData, name:e.target.value})} required placeholder="Student Name" />
-                    </div>
-                    <div style={{flex:2}}>
-                        <label style={labelStyle}>Email</label>
-                        <input type="email" style={inputStyle} value={formData.email} onChange={e=>setFormData({...formData, email:e.target.value})} required placeholder="student@univ.edu" />
-                    </div>
-                    <button type="submit" style={editId ? updateBtn : primaryBtn}>{editId ? "Update" : "Add"}</button>
-                    {editId && <button type="button" onClick={handleCancel} style={cancelBtn}>Cancel</button>}
-                </form>
+            {/* ACTION BUTTONS */}
+            <div style={{display:'flex', justifyContent:'flex-end', gap:'10px', marginBottom:'15px'}}>
+              <button style={primaryBtn} onClick={downloadTemplate}>Download Template</button>
+              <button 
+                style={primaryBtn} 
+                onClick={() => {
+                  setShowBulkUpload(!showBulkUpload);
+                  setEditId(null);
+                  setFormData({ roll: "", name: "", email: "" });
+                }}
+              >
+                {showBulkUpload ? "Cancel Bulk Upload" : "+ Bulk Upload"}
+              </button>
             </div>
+
+            {/* BULK UPLOAD SECTION */}
+            {showBulkUpload && (
+              <div style={{...formBox, border:'2px solid #AD3A3C', marginBottom:'20px'}}>
+                <h4 style={{margin:'0 0 15px', color:'#AD3A3C'}}>Bulk Upload Students</h4>
+                
+
+                <input 
+                  type="file" 
+                  accept=".xlsx,.xls" 
+                  onChange={handleFileUpload}
+                  style={{marginBottom:'15px', padding:'8px', border:'1px solid #ddd', borderRadius:'4px', width:'100%'}}
+                />
+                
+                {bulkData.length > 0 && (
+                  <div style={{background:'white', padding:'15px', borderRadius:'4px', marginBottom:'15px', border:'1px solid #ddd'}}>
+                    <p style={{margin:'0 0 10px', fontWeight:'bold'}}>Preview ({bulkData.length} students)</p>
+                    <div style={{maxHeight:'300px', overflow:'auto'}}>
+                      <table style={{...tableStyle, fontSize:'11px'}}>
+                        <thead>
+                          <tr>
+                            <th style={thStyle}>Roll Number</th>
+                            <th style={thStyle}>Name</th>
+                            <th style={thStyle}>Email</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {bulkData.map((row, idx) => (
+                            <tr key={idx}>
+                              <td style={tdStyle}>{row.roll}</td>
+                              <td style={tdStyle}>{row.name}</td>
+                              <td style={tdStyle}>{row.email}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+                
+                <button 
+                  onClick={handleBulkUpload} 
+                  style={primaryBtn}
+                  disabled={uploading || bulkData.length === 0}
+                >
+                  {uploading ? "Uploading..." : "Create Students"}
+                </button>
+              </div>
+            )}
+
+            {/* ADD / EDIT FORM */}
+            {!showBulkUpload && (
+              <div style={formBox}>
+                  <h4 style={{marginTop:0, color:'#AD3A3C'}}>{editId ? "Edit Student" : "Add New Student"}</h4>
+                  <form onSubmit={handleSubmit} style={{display:'flex', gap:'10px', alignItems:'flex-end'}}>
+                      <div style={{flex:1}}>
+                          <label style={labelStyle}>Roll Number</label>
+                          <input style={inputStyle} value={formData.roll} onChange={e=>setFormData({...formData, roll:e.target.value})} required placeholder="e.g. AM.EN.U4CSE23114" />
+                      </div>
+                      <div style={{flex:2}}>
+                          <label style={labelStyle}>Full Name</label>
+                          <input style={inputStyle} value={formData.name} onChange={e=>setFormData({...formData, name:e.target.value})} required placeholder="Student Name" />
+                      </div>
+                      <div style={{flex:2}}>
+                          <label style={labelStyle}>Email</label>
+                          <input type="email" style={inputStyle} value={formData.email} onChange={e=>setFormData({...formData, email:e.target.value})} required placeholder="student@students.amrita.edu" />
+                      </div>
+                      <button type="submit" style={editId ? updateBtn : primaryBtn}>{editId ? "Update" : "Add"}</button>
+                      {editId && <button type="button" onClick={handleCancel} style={cancelBtn}>Cancel</button>}
+                  </form>
+              </div>
+            )}
 
             {/* LIST */}
             <h4 style={{marginBottom:'10px'}}>Student List ({students.length})</h4>

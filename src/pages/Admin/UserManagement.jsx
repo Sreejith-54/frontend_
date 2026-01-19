@@ -1,7 +1,6 @@
-
-
 import { useState, useEffect } from "react";
 import api from "../utils/api";
+import * as XLSX from 'xlsx';
 
 const UserManagement = () => {
   const [activeTab, setActiveTab] = useState("directory");
@@ -38,7 +37,11 @@ const FacultyDirectory = () => {
   const [facultyList, setFacultyList] = useState([]);
   const [depts, setDepts] = useState([]);
   const [showForm, setShowForm] = useState(false);
-  const [profileForm, setProfileForm] = useState({ name: "", email: "", dept_id: "", auth_key: "" });
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
+  const [profileForm, setProfileForm] = useState({ name: "", email: "", dept: "", auth_key: "" });
+  const [bulkFile, setBulkFile] = useState(null);
+  const [bulkData, setBulkData] = useState([]);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => { fetchData(); }, []);
 
@@ -64,12 +67,156 @@ const FacultyDirectory = () => {
     } catch (e) { alert("Error: " + (e.response?.data?.error || e.message)); }
   };
 
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    setBulkFile(file);
+    const reader = new FileReader();
+    
+    reader.onload = (evt) => {
+      const data = new Uint8Array(evt.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+      
+      const formatted = jsonData.map(row => ({
+        name: row.name || row.Name || "",
+        email: row.email || row.Email || "",
+        dept: row.dept || row.Dept || "",
+        auth_key: row.auth_key || row.Auth_Key || row.auth_key || ""
+      }));
+      
+      setBulkData(formatted);
+    };
+    
+    reader.readAsArrayBuffer(file);
+  };
+
+  const handleBulkUpload = async () => {
+    if (bulkData.length === 0) {
+      alert("Please upload a file first");
+      return;
+    }
+
+    setUploading(true);
+    let successCount = 0;
+    let errorCount = 0;
+    const errors = [];
+
+    for (const faculty of bulkData) {
+      try {
+        
+        const deptMatch = depts.find(d => 
+          d.dept_code?.toUpperCase() === faculty.dept?.toUpperCase() ||
+          d.dept_name?.toUpperCase() === faculty.dept?.toUpperCase()
+        );
+
+        if (!deptMatch) {
+          errorCount++;
+          errors.push(`${faculty.email}: Department '${faculty.dept}' not found`);
+          continue;
+        }
+
+        await api.post("/admin/faculty-profile", {
+          name: faculty.name,
+          email: faculty.email,
+          dept_id: deptMatch.id,
+          auth_key: faculty.auth_key
+        });
+        successCount++;
+      } catch (e) {
+        errorCount++;
+        errors.push(`${faculty.email}: ${e.response?.data?.error || e.message}`);
+      }
+    }
+
+    setUploading(false);
+    alert(`Profiles Created: ${successCount}\nFailed: ${errorCount}${errors.length > 0 ? '\n\nErrors:\n' + errors.slice(0, 5).join('\n') + (errors.length > 5 ? '\n...' : '') : ''}\n\n`);
+    
+    if (successCount > 0) {
+      fetchData();
+      setShowBulkUpload(false);
+      setBulkFile(null);
+      setBulkData([]);
+    }
+  };
+
+  const downloadTemplate = () => {
+    const template = [
+      { name: "Dr John Doe", email: "john@example.com", dept: "CSE", auth_key: "ABC123" },
+      { name: "Dr Jane Smith", email: "jane@example.com", dept: "ECE", auth_key: "XYZ456" },
+      { name: "Dr Robert Brown", email: "robert@example.com", dept: "MECH", auth_key: "DEF789" }
+    ];
+    
+    const ws = XLSX.utils.json_to_sheet(template);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Faculty Profiles");
+    XLSX.writeFile(wb, "faculty_profiles_template.xlsx");
+  };
+
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom:'20px' }}>
-        <div><h3 style={{margin:0}}>Faculty Directory</h3><p style={{fontSize:'13px', color:'#666', margin:'5px 0 0'}}>Manage profiles.</p></div>
-        <button style={primaryBtn} onClick={() => setShowForm(!showForm)}>{showForm ? "Cancel" : "+ Add Profile"}</button>
+        <div>
+          <h3 style={{margin:0}}>Faculty Directory</h3>
+        </div>
+        <div style={{display:'flex', gap:'10px'}}>
+          <button style={primaryBtn} onClick={downloadTemplate}>Download Template</button>
+          <button style={primaryBtn} onClick={() => {setShowBulkUpload(!showBulkUpload); setShowForm(false)}}>{showBulkUpload ? "Cancel" : "+ Upload Profiles"}</button>
+          <button style={primaryBtn} onClick={() => {setShowForm(!showForm); setShowBulkUpload(false)}}>{showForm ? "Cancel" : "+ Add Profile"}</button>
+        </div>
       </div>
+
+      {showBulkUpload && (
+        <div style={{...formContainer, border:'2px solid #AD3A3C'}}>
+          <h4 style={{margin:'0 0 15px'}}>Upload Faculty Profiles</h4>
+          
+
+          <input 
+            type="file" 
+            accept=".xlsx,.xls" 
+            onChange={handleFileUpload}
+            style={{marginBottom:'15px', padding:'8px', border:'1px solid #ddd', borderRadius:'4px', width:'100%'}}
+          />
+          
+          {bulkData.length > 0 && (
+            <div style={{background:'white', padding:'15px', borderRadius:'4px', marginBottom:'15px', border:'1px solid #ddd'}}>
+              <p style={{margin:'0 0 10px', fontWeight:'bold'}}>Preview ({bulkData.length} profiles)</p>
+              <div style={{maxHeight:'200px', overflow:'auto'}}>
+                <table style={{...tableStyle, fontSize:'11px'}}>
+                  <thead>
+                    <tr>
+                      <th style={thStyle}>Name</th>
+                      <th style={thStyle}>Email</th>
+                      <th style={thStyle}>Dept</th>
+                      <th style={thStyle}>Auth Key</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bulkData.map((row, idx) => (
+                      <tr key={idx}>
+                        <td style={tdStyle}>{row.name}</td>
+                        <td style={tdStyle}>{row.email}</td>
+                        <td style={tdStyle}>{row.dept}</td>
+                        <td style={tdStyle}>{row.auth_key}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          
+          <button 
+            onClick={handleBulkUpload} 
+            style={primaryBtn}
+            disabled={uploading}
+          >
+            {uploading ? "Creating Profiles..." : "Create Profiles"}
+          </button>
+        </div>
+      )}
 
       {showForm && (
         <div style={formContainer}>
@@ -134,12 +281,9 @@ const FacultyUserCreation = () => {
 };
 
 /* =========================================================================================
-   TAB 3: STUDENT & CR MANAGEMENT (UPDATED)
+   TAB 3: STUDENT & CR MANAGEMENT
    ========================================================================================= */
-/* =========================================================================================
-   TAB 3: STUDENT & CR MANAGEMENT (UPDATED)
-   ========================================================================================= */
-   const StudentCRSection = () => {
+const StudentCRSection = () => {
     const [depts, setDepts] = useState([]);
     const [batches, setBatches] = useState([]);
     const [sections, setSections] = useState([]);
@@ -261,7 +405,7 @@ const FacultyUserCreation = () => {
         )}
       </>
     );
-  };
+};
 
 /* ================= STYLES ================= */
 const tabBtn = (active) => ({ padding: "10px 15px", border: "none", borderBottom: active ? "3px solid #AD3A3C" : "3px solid transparent", background: "none", cursor: "pointer", fontWeight: active ? "bold" : "normal", color: active ? "#AD3A3C" : "#666", fontSize: "14px", transition: "all 0.2s" });
