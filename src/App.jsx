@@ -10,6 +10,7 @@ import Cr from './components/Attendance.jsx';
 import AttendanceReport from './pages/Faculty/AttendanceReport.jsx';
 import MainLayout from './components/MainLayout.jsx';
 import Login from './pages/Login/Login.jsx';
+import Dashboard from "./pages/dashboard/dashboard";
 
 // --- ROLE-BASED PROTECTOR COMPONENT ---
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -36,6 +37,7 @@ function App() {
           <Routes>
             {/* PUBLIC ROUTE */}
             <Route path="/" element={<Login />} />
+            
 
             {/* CR ROUTES */}
             <Route 
@@ -89,6 +91,11 @@ function App() {
 
             {/* CATCH ALL - Redirect unknown routes to login */}
             <Route path="*" element={<Navigate to="/" replace />} />
+            {/* DASHBOARD ROUTE */}
+            <Route 
+              path="/dashboard" 
+              element={<Dashboard />}
+            />
           </Routes>
         </div>
       </BrowserRouter>
