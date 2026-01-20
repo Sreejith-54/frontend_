@@ -1,81 +1,118 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import './subjectwisereport_style.css';
 
 function SubjectWiseReport() {
-  const [selectedClass, setSelectedClass] = useState("Class 1");
+  const [sections, setSections] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [selectedClass, setSelectedClass] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("");
-  const subjects=["Operating System","DBMS","Optimization Techniques","Advanced Programming"]
-  const classes=["Class1","Class2","Class3","Class4","OperatingSystem"]
-  const reportData = [
-    { id: 1, rollno: "CSE001", name: "Alice", attendance: "85%" },
-    { id: 2, rollno: "CSE002", name: "Bob ", attendance: "72%" },
-    { id: 3, rollno: "CSE003", name: "Priya", attendance: "90%" },
-    { id: 4, rollno: "CSE004", name: "Rithu", attendance: "65%" },
-  ];
+  const [reportData, setReportData] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // 1. Load Initial Dropdown Data (Sections and Courses)
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const headers = { Authorization: `Bearer ${token}` };
+
+    Promise.all([
+      fetch(`${import.meta.env.VITE_API_URL}/api/admin/sections`, { headers }).then(res => res.json()),
+      fetch(`${import.meta.env.VITE_API_URL}/api/admin/courses`, { headers }).then(res => res.json())
+    ]).then(([sectionsData, coursesData]) => {
+      setSections(sectionsData);
+      setCourses(coursesData);
+    }).catch(err => console.error("Error loading filters:", err));
+  }, []);
+
+  // 2. Fetch Report Data when filters change
+  useEffect(() => {
+    if (selectedClass && selectedSubject) {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      
+      fetch(`${import.meta.env.VITE_API_URL}/api/admin/attendance-report?section_id=${selectedClass}&course_code=${selectedSubject}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(res => res.json())
+        .then(data => {
+          setReportData(data);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error("Error loading report:", err);
+          setLoading(false);
+        });
+    }
+  }, [selectedClass, selectedSubject]);
 
   return (
     <div className='container'>
-      <div className='operator' style={{display: 'flex', justifyContent: 'space-around', backgroundColor: '#f0f0f0', margin: '30px 20px', padding: '40px 20px', borderRadius: '8px'}}>
-          <div className='class-selection'>
-            <label htmlFor='class' style={{fontSize: '2vh', fontWeight: '600', marginRight: '10px'}}>Select Class: </label>
-            <select id='class' name='class' style={{fontSize: '1.5vh', padding: '10px 5vw', }} value={selectedClass} 
-            onChange={(e) => setSelectedClass(e.target.value)}>
-            {classes.map((className,index)=>(
-              <option value={className} key={index}>{className}</option>
+      <div className='operator' style={headerStyle}>
+        {/* Class Selection */}
+        <div className='class-selection'>
+          <label style={labelStyle}>Select Class: </label>
+          <select 
+            style={selectStyle} 
+            value={selectedClass} 
+            onChange={(e) => setSelectedClass(e.target.value)}
+          >
+            <option value="">Select Class</option>
+            {sections.map((sec) => (
+              <option value={sec.id} key={sec.id}>{sec.batch_name} - {sec.section_name}</option>
             ))}
-
-            </select>
-          </div>
-           <div>
-              <div style={{display: 'flex', alignItems: 'center'}}>
-                    <label htmlFor='subject' style={{fontSize: '2vh', fontWeight: '600', marginRight: '1vw'}}>Select Subject: </label>
-                    <select  style={{fontSize: '1.5vh', padding: '10px 5vw'}}
-                  value={selectedSubject} 
-                  onChange={(e) => setSelectedSubject(e.target.value)}
-                >
-                  {
-                    subjects.map((subject,index)=>{
-                      return(
-                        <option value={subject} key={index}>{subject}</option>
-                      )
-                    })
-                  }
-                </select>
-              </div>
-          </div>
+          </select>
         </div>
 
-     
+        {/* Subject Selection */}
+        <div>
+          <label style={labelStyle}>Select Subject: </label>
+          <select 
+            style={selectStyle} 
+            value={selectedSubject} 
+            onChange={(e) => setSelectedSubject(e.target.value)}
+          >
+            <option value="">Select Subject</option>
+            {courses.map((course) => (
+              <option value={course.course_code} key={course.course_code}>{course.course_name}</option>
+            ))}
+          </select>
+        </div>
+      </div>
 
       <div className='main'>
         <div className='report'>
-          <table className="report-table">
-            <thead>
-              <tr>
-                <th>Roll No</th>
-                <th>Student Name</th>
-                <th>Attendance</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reportData.map((student) => (
-                <tr id={student.id} style={{backgroundColor: parseInt(student.attendance) < 75 ? '#ff8164' : parseInt(student.attendance) < 80 ? '#fdb469' : 'white'  }}>
-                  <td style={{borderTopLeftRadius: '18px', borderBottomLeftRadius: '18px'}}>{student.rollno}</td>
-                  <td>{student.name}</td>
-                  <td>{student.attendance}</td>
+          {loading ? <p>Loading Report...</p> : (
+            <table className="report-table">
+              <thead>
+                <tr>
+                  <th>Roll No</th>
+                  <th>Student Name</th>
+                  <th>Attendance %</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        
-        <div className='details'>
-          <h3>Summary for {selectedClass}</h3>
-          <p>Subject: {selectedSubject || "None Selected"}</p>
+              </thead>
+              <tbody>
+                {reportData.map((student) => {
+                  const perc = parseFloat(student.percentage);
+                  const bgColor = perc < 75 ? '#ff8164' : perc < 80 ? '#fdb469' : 'white';
+
+                  return (
+                    <tr key={student.roll_number} style={{ backgroundColor: bgColor }}>
+                      <td style={{ borderTopLeftRadius: '18px', borderBottomLeftRadius: '18px' }}>{student.roll_number}</td>
+                      <td>{student.full_name}</td>
+                      <td>{student.percentage}% ({student.attended}/{student.total})</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>
   );
 }
+
+const headerStyle = { display: 'flex', justifyContent: 'space-around', backgroundColor: '#f0f0f0', margin: '30px 20px', padding: '40px 20px', borderRadius: '8px' };
+const labelStyle = { fontSize: '2vh', fontWeight: '600', marginRight: '10px' };
+const selectStyle = { fontSize: '1.5vh', padding: '10px 2vw' };
 
 export default SubjectWiseReport;

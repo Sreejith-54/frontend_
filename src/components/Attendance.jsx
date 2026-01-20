@@ -294,12 +294,13 @@ export default function Attendance() {
           <label className="label">
             Faculty Code
             <input
-              type="text"
+              type="password"
               placeholder="Enter faculty code"
               value={facultyCode}
               onChange={(e) => setFacultyCode(e.target.value)}
               className="input"
               maxLength={6}
+              autoComplete="off"
             />
           </label>
 

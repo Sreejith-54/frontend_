@@ -3,10 +3,12 @@ import logo from '../logo.png'
 import { NavLink } from 'react-router-dom'
 import "./Navbar.css"
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../pages/Login/AuthContext';
 
 const Navbar = ({links}) => {
     const user = localStorage.getItem("user");
     const Navigate = useNavigate();
+    const { logout } = useAuth();
   return (
     <div>
         <header style={{ backgroundColor: '#AD3A3C' , color: 'white' , display: 'flex', justifyContent: 'space-between' }}>
@@ -26,6 +28,8 @@ const Navbar = ({links}) => {
                     </li>
                 ))}
             </ul>
+            <button onClick={()=>{logout(); Navigate('/login')}}
+             style={{marginRight: '30px', padding: '10px 20px',border: "solid 1px white", borderRadius: '5px', fontSize:'medium', backgroundColor:'#AD3A3C',color:'white'}}>Logout</button>
             </nav>
         </header>
       </div>

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import UserManagement from "./UserManagement";
 import DepartmentManagement from "./DepartmentManagement";
@@ -11,10 +10,12 @@ import FacultyTimetableViewer from "./FacultyTimetableViewer"; // <--- 1. NEW IM
 import TimetableConfig from "./TimetableConfig";
 import AttendanceOverview from "./AttendanceOverview";
 import AttendanceShortage from "./AttendanceShortage";
+import Dashboard from "../dashboard/Dashboard";
 import Reports from "./Reports";
 
 const AdminDashboard = () => {
-  const [activeSection, setActiveSection] = useState("view_timetable");
+  const [activeSection, setActiveSection] = useState("dashboard");
+  const role = localStorage.getItem("role");
 
   return (
     <div style={{ display: "flex", height: "100%", minHeight: "100vh" }}>
@@ -22,16 +23,18 @@ const AdminDashboard = () => {
       {/* SIDEBAR */}
       <aside style={{ width: "260px", backgroundColor: "#AD3A3C", color: "white", padding: "20px", display: "flex", flexDirection: "column" }}>
         <h2 style={{ fontSize: "1.3rem", marginBottom: "30px", borderBottom: "1px solid rgba(255,255,255,0.3)", paddingBottom: "15px" }}>
-          Admin Portal
+          {role} Portal
         </h2>
 
         <nav style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          
+          <button style={navBtn(activeSection === "dashboard")} onClick={() => setActiveSection("dashboard")}>Dashboard</button>
           <small style={{ color: "#ffcccb", fontWeight: "bold", marginTop: "10px" }}>TIMETABLE</small>
           <button style={navBtn(activeSection === "view_timetable")} onClick={() => setActiveSection("view_timetable")}>Class Timetable</button>
           {/* 2. NEW BUTTON HERE */}
           <button style={navBtn(activeSection === "faculty_timetable")} onClick={() => setActiveSection("faculty_timetable")}>Faculty Schedule</button>
           
+          {role === 'admin' && (
+          <>
           <button style={navBtn(activeSection === "config_timetable")} onClick={() => setActiveSection("config_timetable")}>Configure Slots</button>
 
           <small style={{ color: "#ffcccb", fontWeight: "bold", marginTop: "10px" }}>ACADEMICS</small>
@@ -39,14 +42,22 @@ const AdminDashboard = () => {
           <button style={navBtn(activeSection === "batches")} onClick={() => setActiveSection("batches")}>Batches</button>
           <button style={navBtn(activeSection === "sections")} onClick={() => setActiveSection("sections")}>Sections</button>
           <button style={navBtn(activeSection === "subjects")} onClick={() => setActiveSection("subjects")}>Subjects / Courses</button>
-
+          </>
+          )}
           <small style={{ color: "#ffcccb", fontWeight: "bold", marginTop: "10px" }}>PEOPLE & DATA</small>
+          {role === 'admin' && (
+          <>
           <button style={navBtn(activeSection === "students")} onClick={() => setActiveSection("students")}>Student Management</button>
           <button style={navBtn(activeSection === "users")} onClick={() => setActiveSection("users")}>User & Role Mgmt</button>
+          </>
+          )}
           <button style={navBtn(activeSection === "attendance")} onClick={() => setActiveSection("attendance")}>Attendance Overview</button>
           <button style={navBtn(activeSection === "shortage")} onClick={() => setActiveSection("shortage")}>Shortage List</button>
           <button style={navBtn(activeSection === "reports")} onClick={() => setActiveSection("reports")}>Reports</button>
         </nav>
+        {role === 'faculty' && (
+          <button style={primaryBtn} onClick={()=>{handleFacultyCode}}>Get Faculty code </button>
+        )}
       </aside>
 
       {/* MAIN CONTENT */}
@@ -74,6 +85,7 @@ const navBtn = (active) => ({
 
 const getSectionTitle = (key) => {
   switch (key) {
+    case "dashboard": return "Dashboard";
     case "view_timetable": return "Class Timetable Viewer";
     case "faculty_timetable": return "Faculty Schedule Viewer"; // <--- 3. ADD TITLE
     case "config_timetable": return "Configure Timetable Slots";
@@ -92,6 +104,7 @@ const getSectionTitle = (key) => {
 
 const renderSection = (key) => {
   switch (key) {
+    case "dashboard": return <Dashboard />;
     case "view_timetable": return <ViewTimeTable />;
     case "faculty_timetable": return <FacultyTimetableViewer />; // <--- 4. RENDER COMPONENT
     case "config_timetable": return <TimetableConfig />;
@@ -106,6 +119,16 @@ const renderSection = (key) => {
     case "shortage": return <AttendanceShortage />;
     default: return null;
   }
+};
+
+const primaryBtn = {
+  marginTop: "12px",
+  padding: "8px 0px",
+  backgroundColor: "white",
+  color: "#AD3A3C",
+  border: "none",
+  borderRadius: "4px",
+  cursor: "pointer",
 };
 
 export default AdminDashboard;
