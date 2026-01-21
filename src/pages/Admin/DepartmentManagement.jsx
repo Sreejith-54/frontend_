@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import api from "../utils/api";
+import SuccessPopup from "../../components/SuccessPopup";
 
 const DepartmentManagement = () => {
   const [depts, setDepts] = useState([]);
   const [formData, setFormData] = useState({ name: "", code: "" });
+  const [showPopup, setShowPopup] = useState(false);
 
   const fetchDepts = async () => {
     try {
@@ -24,9 +26,9 @@ const DepartmentManagement = () => {
       await api.post("/admin/depts", formData);
       setFormData({ name: "", code: "" });
       fetchDepts();
-      alert("Department Added!");
+      setShowPopup(true); 
     } catch (err) {
-      alert("Error adding department");
+      alert("Error adding department: " + (err.response?.data?.error || err.message));
     }
   };
 
@@ -46,14 +48,14 @@ const DepartmentManagement = () => {
       <form onSubmit={handleSubmit} style={formStyle}>
         <input
           style={inputStyle}
-          placeholder="Department Name (e.g. Computer Science)"
+          placeholder="Department Name"
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           required
         />
         <input
           style={inputStyle}
-          placeholder="Code (e.g. CSE)"
+          placeholder="Code"
           value={formData.code}
           onChange={(e) => setFormData({ ...formData, code: e.target.value })}
           required
@@ -84,11 +86,17 @@ const DepartmentManagement = () => {
           ))}
         </tbody>
       </table>
+
+      {/* REUSABLE POPUP */}
+      <SuccessPopup 
+        isOpen={showPopup} 
+        onClose={() => setShowPopup(false)} 
+        message="Department added successfully!" 
+      />
     </div>
   );
 };
 
-// Common Styles (reused)
 const formStyle = { display: "flex", gap: "10px", marginBottom: "30px", alignItems: "center" };
 const inputStyle = { padding: "10px", border: "1px solid #ddd", borderRadius: "4px", flex: 1 };
 const primaryBtn = { padding: "10px 20px", background: "#AD3A3C", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" };
@@ -96,5 +104,6 @@ const dangerBtn = { padding: "5px 10px", background: "#ff4d4f", color: "white", 
 const tableStyle = { width: "100%", borderCollapse: "collapse", marginTop: "10px" };
 const thStyle = { textAlign: "left", padding: "12px", background: "#eee", borderBottom: "2px solid #ddd" };
 const tdStyle = { padding: "12px", borderBottom: "1px solid #eee" };
+
 
 export default DepartmentManagement;

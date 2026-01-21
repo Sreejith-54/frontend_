@@ -1,6 +1,5 @@
 import React from 'react'
 import logo from '../logo.png'
-import { NavLink } from 'react-router-dom'
 import "./Navbar.css"
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../pages/Login/AuthContext';
@@ -21,13 +20,6 @@ const Navbar = ({links}) => {
                 <button onClick={()=>Navigate('/admin')} style={{padding: '10px 20px', fontSize:'medium', backgroundColor:'#AD3A3C',color:'white'}}>Admin functionalities</button>
                 </div>
             }
-            <ul>
-                {links && links.map((item, index) => (
-                    <li key={index} style={{listStyleType: 'none', display: 'inline', marginRight: '20px'}}>
-                        <NavLink to={item.link} style={{color: 'white', textDecoration: 'none', fontSize: '2vh'}} >{item.name}</NavLink>
-                    </li>
-                ))}
-            </ul>
             <button onClick={()=>{logout(); Navigate('/login')}}
              style={{marginRight: '30px', padding: '10px 20px',border: "solid 1px white", borderRadius: '5px', fontSize:'medium', backgroundColor:'#AD3A3C',color:'white'}}>Logout</button>
             </nav>

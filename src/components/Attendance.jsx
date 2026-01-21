@@ -299,7 +299,6 @@ export default function Attendance() {
               value={facultyCode}
               onChange={(e) => setFacultyCode(e.target.value)}
               className="input"
-              maxLength={6}
               autoComplete="off"
             />
           </label>

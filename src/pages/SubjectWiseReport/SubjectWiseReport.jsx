@@ -2,28 +2,38 @@ import React, { useState, useEffect } from "react";
 import './subjectwisereport_style.css';
 
 function SubjectWiseReport() {
+  const [depts, setDepts] = useState([]);
+  const [batches, setBatches] = useState([]);
   const [sections, setSections] = useState([]);
   const [courses, setCourses] = useState([]);
+
+  const [selectedDept, setSelectedDept] = useState("");
+  const [selectedBatch, setSelectedBatch] = useState("");
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("");
+  
   const [reportData, setReportData] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // 1. Load Initial Dropdown Data (Sections and Courses)
+  // 1. Initial Load: Fetch All Dropdown Data
   useEffect(() => {
     const token = localStorage.getItem("token");
     const headers = { Authorization: `Bearer ${token}` };
 
     Promise.all([
+      fetch(`${import.meta.env.VITE_API_URL}/api/admin/depts`, { headers }).then(res => res.json()),
+      fetch(`${import.meta.env.VITE_API_URL}/api/admin/batches`, { headers }).then(res => res.json()),
       fetch(`${import.meta.env.VITE_API_URL}/api/admin/sections`, { headers }).then(res => res.json()),
       fetch(`${import.meta.env.VITE_API_URL}/api/admin/courses`, { headers }).then(res => res.json())
-    ]).then(([sectionsData, coursesData]) => {
+    ]).then(([deptsData, batchesData, sectionsData, coursesData]) => {
+      setDepts(deptsData);
+      setBatches(batchesData);
       setSections(sectionsData);
       setCourses(coursesData);
     }).catch(err => console.error("Error loading filters:", err));
   }, []);
 
-  // 2. Fetch Report Data when filters change
+  // 2. Fetch Report Data when Section and Subject are selected
   useEffect(() => {
     if (selectedClass && selectedSubject) {
       setLoading(true);
@@ -41,30 +51,78 @@ function SubjectWiseReport() {
           console.error("Error loading report:", err);
           setLoading(false);
         });
+    } else {
+      setReportData([]);
     }
   }, [selectedClass, selectedSubject]);
 
   return (
     <div className='container'>
       <div className='operator' style={headerStyle}>
-        {/* Class Selection */}
-        <div className='class-selection'>
-          <label style={labelStyle}>Select Class: </label>
+        
+        {/* Department Selection */}
+        <div className='selection-box'>
+          <label style={labelStyle}>Dept: </label>
           <select 
             style={selectStyle} 
-            value={selectedClass} 
-            onChange={(e) => setSelectedClass(e.target.value)}
+            value={selectedDept} 
+            onChange={(e) => {
+              setSelectedDept(e.target.value);
+              setSelectedBatch("");
+              setSelectedClass("");
+            }}
           >
-            <option value="">Select Class</option>
-            {sections.map((sec) => (
-              <option value={sec.id} key={sec.id}>{sec.batch_name} - {sec.section_name}</option>
+            <option value="">Select Dept</option>
+            {depts.map((d) => (
+              <option value={d.id} key={d.id}>{d.dept_code}</option>
             ))}
           </select>
         </div>
 
+        {/* Batch Selection */}
+        <div className='selection-box'>
+          <label style={labelStyle}>Batch: </label>
+          <select 
+            style={selectStyle} 
+            value={selectedBatch} 
+            disabled={!selectedDept}
+            onChange={(e) => {
+              setSelectedBatch(e.target.value);
+              setSelectedClass("");
+            }}
+          >
+            <option value="">Select Batch</option>
+            {batches
+              .filter(b => b.dept_id === parseInt(selectedDept))
+              .map((b) => (
+                <option value={b.id} key={b.id}>{b.batch_name}</option>
+              ))
+            }
+          </select>
+        </div>
+
+        {/* Class/Section Selection */}
+        <div className='selection-box'>
+          <label style={labelStyle}>Class: </label>
+          <select 
+            style={selectStyle} 
+            value={selectedClass} 
+            disabled={!selectedBatch}
+            onChange={(e) => setSelectedClass(e.target.value)}
+          >
+            <option value="">Select Class</option>
+            {sections
+              .filter(s => s.batch_id === parseInt(selectedBatch))
+              .map((sec) => (
+                <option value={sec.id} key={sec.id}>{sec.section_name}</option>
+              ))
+            }
+          </select>
+        </div>
+
         {/* Subject Selection */}
-        <div>
-          <label style={labelStyle}>Select Subject: </label>
+        <div className='selection-box'>
+          <label style={labelStyle}>Subject: </label>
           <select 
             style={selectStyle} 
             value={selectedSubject} 
@@ -80,7 +138,7 @@ function SubjectWiseReport() {
 
       <div className='main'>
         <div className='report'>
-          {loading ? <p>Loading Report...</p> : (
+          {loading ? <p style={{textAlign: 'center'}}>Loading Report...</p> : (
             <table className="report-table">
               <thead>
                 <tr>
@@ -90,7 +148,7 @@ function SubjectWiseReport() {
                 </tr>
               </thead>
               <tbody>
-                {reportData.map((student) => {
+                {reportData.length > 0 ? reportData.map((student) => {
                   const perc = parseFloat(student.percentage);
                   const bgColor = perc < 75 ? '#ff8164' : perc < 80 ? '#fdb469' : 'white';
 
@@ -101,7 +159,13 @@ function SubjectWiseReport() {
                       <td>{student.percentage}% ({student.attended}/{student.total})</td>
                     </tr>
                   );
-                })}
+                }) : (
+                    <tr>
+                        <td colSpan="3" style={{textAlign: 'center', padding: '20px', color: '#666'}}>
+                            {selectedClass && selectedSubject ? "No records found" : "Please select all filters to view report"}
+                        </td>
+                    </tr>
+                )}
               </tbody>
             </table>
           )}
@@ -111,8 +175,18 @@ function SubjectWiseReport() {
   );
 }
 
-const headerStyle = { display: 'flex', justifyContent: 'space-around', backgroundColor: '#f0f0f0', margin: '30px 20px', padding: '40px 20px', borderRadius: '8px' };
-const labelStyle = { fontSize: '2vh', fontWeight: '600', marginRight: '10px' };
-const selectStyle = { fontSize: '1.5vh', padding: '10px 2vw' };
+// Maintaining your original style constants
+const headerStyle = { 
+    display: 'flex', 
+    justifyContent: 'space-around', 
+    backgroundColor: '#f0f0f0', 
+    margin: '30px 20px', 
+    padding: '40px 10px', 
+    borderRadius: '8px',
+    flexWrap: 'wrap',
+    gap: '10px'
+};
+const labelStyle = { fontSize: '1.8vh', fontWeight: '600', marginRight: '5px' };
+const selectStyle = { fontSize: '1.5vh', padding: '8px 1vw', borderRadius: '4px', border: '1px solid #ccc' };
 
 export default SubjectWiseReport;

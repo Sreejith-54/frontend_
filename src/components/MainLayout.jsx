@@ -35,7 +35,7 @@ export default function MainLayout() {
         
         {/* This renders the child routes (Cr, AdminDashboard, etc.) */}
         <Outlet />
-        <div style={{ backgroundColor: '#AD3A3C' , color: 'white' , display: 'flex',justifyContent: 'center', alignItems: 'center', height: '8vh'}}>
+        <div style={{ backgroundColor: '#AD3A3C' , color: 'white' , display: 'flex',justifyContent: 'center', alignItems: 'center', height: '50px',position:'sticky', bottom:'0', width:'100%' }}>
           <p>© 2026 ACM Amritapuri All Rights Reserved.</p>
         </div>
       </main>
