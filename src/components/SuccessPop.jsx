@@ -1,7 +1,7 @@
 import React from 'react';
 import { X, CheckCircle } from 'lucide-react';
 
-const SuccessPopup = ({ isOpen, onClose, message }) => {
+const SuccessPop = ({ isOpen, onClose, message }) => {
   if (!isOpen) return null;
 
   return (
@@ -62,4 +62,4 @@ const popupCloseBtnStyle = {
   fontSize: '16px', fontWeight: '500', cursor: 'pointer'
 };
 
-export default SuccessPopup;
+export default SuccessPop;

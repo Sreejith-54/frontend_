@@ -18,12 +18,12 @@ code {
   min-height: 100vh;
 }
 
-/* --- FILTERS (Fixed Wrapping) --- */
+/* --- FILTERS --- */
 .filters {
   display: flex;
   gap: 15px;
   margin-bottom: 20px;
-  flex-wrap: wrap; /* Allows items to wrap on small screens */
+  flex-wrap: wrap;
   align-items: center;
 }
 
@@ -31,7 +31,7 @@ code {
   padding: 9px 14px;
   border-radius: 8px;
   border: 1px solid #cfcfcf;
-  min-width: 150px; /* Reduced slightly to fit more */
+  min-width: 150px;
   background-color: #f1f3f6;   
   color: #333;
   font-weight: 500;
@@ -59,14 +59,18 @@ code {
   border-radius: 4px;
   cursor: pointer;
   font-weight: bold;
-  margin-left: auto; /* Pushes button to right */
+  margin-left: auto;
+}
+
+.fetch-btn:hover {
+  background: #8d2e30;
 }
 
 /* --- TABLE LAYOUT --- */
+/* ✅ CRITICAL FIX: Proper 5-column grid */
 .attendance-row {
   display: grid;
-  /* Fixed name, Flexible Scrollable Area, Fixed Summary */
-  grid-template-columns: 200px 1fr 100px; 
+  grid-template-columns: 200px 1fr 100px 110px 90px;
   align-items: center;
   gap: 10px;
   background: #ffffff;
@@ -74,41 +78,49 @@ code {
   margin-bottom: 8px;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  min-height: 50px;
 }
 
 .attendance-row.header {
   background: #e0e0e0;
   font-weight: 600;
   box-shadow: none;
-  /* Align header text to bottom so dates sit right above boxes */
-  align-items: end; 
-  padding-bottom: 5px;
+  align-items: center;
+  padding: 10px 12px;
+  margin-bottom: 10px;
 }
 
+/* ✅ Column 1: Student Name */
 .student-name {
   font-size: 14px;
   color: #333;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  grid-column: 1;
 }
 
-/* --- SCROLLABLE AREA FOR BOXES & DATES --- */
+/* ✅ Column 2: Scrollable Days */
 .attendance-days {
   display: flex;
-  flex-wrap: nowrap; /* Prevent wrapping to ensure alignment */
-  gap: 6px; /* Gap between columns */
-  overflow-x: auto; /* Enable horizontal scrolling */
-  padding-bottom: 5px; /* Space for scrollbar */
-  /* Hide scrollbar for Chrome/Safari/Opera */
-  scrollbar-width: thin; 
+  flex-wrap: nowrap;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 5px 0;
+  scrollbar-width: thin;
+  grid-column: 2;
+  align-items: center;
 }
 
-/* Center the box within the column */
+.attendance-days.header-scroll {
+  display: flex;
+  gap: 6px;
+}
+
 .box-wrapper {
   display: flex;
   justify-content: center;
-  width: 24px; /* Fixed Width MUST match .date-header-cell width */
+  width: 24px;
   flex-shrink: 0;
 }
 
@@ -123,15 +135,14 @@ code {
 .day-box.absent { background-color: #f44336; }
 .day-box.late { background-color: #ff9800; }
 
-/* --- DATE HEADER STYLING --- */
 .date-header-cell {
-  width: 24px; /* MUST match .box-wrapper width */
+  width: 24px;
   flex-shrink: 0;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   font-size: 11px;
   color: #555;
   line-height: 1.1;
@@ -143,21 +154,79 @@ code {
   color: #000;
 }
 
-.slot-num {
-  font-size: 9px;
-  color: #777;
-}
-
+/* ✅ Column 3: Monthly Summary */
 .attendance-summary {
   text-align: center;
   font-weight: 600;
   padding: 6px 5px;
-  border-radius: 12px;
+  border-radius: 8px;
   background: #eeeeee;
   font-size: 13px;
   white-space: nowrap;
+  line-height: 1.3;
+}
+
+/* Make sure Monthly column stays in place */
+.attendance-row > .attendance-summary:nth-child(3) {
+  grid-column: 3;
+}
+
+/* ✅ Columns 4 & 5: Total columns */
+.attendance-summary.total-col {
+  border-left: 3px solid #ccc;
+  background: #f9f9f9;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+/* Total Attended column */
+.attendance-row > .attendance-summary.total-col:nth-child(4) {
+  grid-column: 4;
+}
+
+/* Overall % column */
+.attendance-row > .attendance-summary.total-col:nth-child(5) {
+  grid-column: 5;
+}
+
+.attendance-summary small {
+  font-size: 11px;
+  color: #666;
+  display: block;
+  margin-top: 2px;
 }
 
 .attendance-row:not(.header):hover {
   background: #fafafa;
+  transform: translateX(2px);
+  transition: all 0.2s ease;
+}
+
+/* ✅ RESPONSIVE */
+@media (max-width: 1200px) {
+  .attendance-row {
+    grid-template-columns: 150px 1fr 90px 100px 85px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .attendance-row {
+    grid-template-columns: 120px 1fr 80px 90px 75px;
+    font-size: 11px;
+  }
+  
+  .student-name {
+    font-size: 12px;
+  }
+  
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .fetch-btn {
+    margin-left: 0;
+    width: 100%;
+  }
 }
