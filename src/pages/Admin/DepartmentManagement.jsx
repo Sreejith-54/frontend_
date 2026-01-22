@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "../utils/api";
-import SuccessPop from "../../components/SuccessPop";
-
+import SuccessPopup from "../../components/SuccessPop";
 
 const DepartmentManagement = () => {
   const [depts, setDepts] = useState([]);
@@ -88,12 +87,12 @@ const DepartmentManagement = () => {
         </tbody>
       </table>
 
-        <SuccessPop
-          isOpen={showPopup} 
-          onClose={() => setShowPopup(false)} 
-          message="Department added successfully!" 
+      {/* REUSABLE POPUP */}
+      <SuccessPopup 
+        isOpen={showPopup} 
+        onClose={() => setShowPopup(false)} 
+        message="Department added successfully!" 
       />
-      
     </div>
   );
 };

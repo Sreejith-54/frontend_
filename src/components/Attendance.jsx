@@ -177,7 +177,10 @@ export default function Attendance() {
         status: student.status
       }));
 
-      const today = new Date().toISOString().split('T')[0];
+
+      const today = new Date().toLocaleDateString('en-CA');
+
+      // const today = new Date().toISOString().split('T')[0];
 
       // Determine which course to send
       const courseToSend = isFreeHour ? selectedSlot.course_code : selectedCourse;

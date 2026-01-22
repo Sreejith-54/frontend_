@@ -298,7 +298,7 @@
   }
 
   .attendance-wrapper {
-    flex-direction: column;
+    flex-direction: column-reverse;
     gap: 15px;
   }
 
