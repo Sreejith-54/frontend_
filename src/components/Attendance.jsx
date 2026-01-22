@@ -187,29 +187,8 @@ export default function Attendance() {
         ? selectedSlot 
         : timetableSlots.find(slot => slot.course_code === selectedCourse) || selectedSlot;
 
-      // Submit attendance
-      const response = await fetch(`${API_URL}/api/cr/attendance`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          timetable_id: selectedSlot.id,
-          date: today,
-          records: records,
-          selected_course_code: courseToSend,
-          is_free: isFreeHour
-        })
-      });
-
-      if (!response.ok) throw new Error('Failed to submit attendance');
-
-      const data = await response.json();
-      const newSessionId = data.sessionId;
-
       // Verify with faculty code
-      const verifyResponse = await fetch(`${API_URL}/api/faculty/verify/${newSessionId}`, {
+      const verifyResponse = await fetch(`${API_URL}/api/faculty/verify`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -225,6 +204,22 @@ export default function Attendance() {
         const errorData = await verifyResponse.json();
         throw new Error(errorData.error || 'Invalid faculty code');
       }
+
+      // Submit attendance
+       const response = await fetch(`${API_URL}/api/cr/attendance`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          timetable_id: selectedSlot.id,
+          date: today,
+          records: records,
+          selected_course_code: courseToSend,
+          is_free: isFreeHour
+        })
+      });
 
       alert('Attendance Submitted and Verified Successfully!');
       

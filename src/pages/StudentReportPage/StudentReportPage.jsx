@@ -1,54 +1,113 @@
 import StudentReportComponent from "../../components/StudentReportComponent.jsx";
-import StudentReportCalender from '../../components/StudentReportCalender.jsx';
 import React, { useState, useEffect } from 'react';
 import './StudentReportPage.css';
 
 const StudentReport = (props) => {
-  const [rawRecords, setRawRecords] = useState([]); 
   const [summaryData, setSummaryData] = useState([]); 
-  const [subject, setSubject] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchStudentData = async () => {
       if (!props.RollNo) return;
       
       setLoading(true);
+      setError(null);
+      
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/student-report?roll_number=${props.RollNo}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const data = await response.json();
         
-        if (response.ok) {
-          setRawRecords(data);
-
-          const grouped = data.reduce((acc, curr) => {
-            const course = curr.course_name;
-            if (!acc[course]) {
-              acc[course] = { attended: 0, total: 0, code: curr.course_code || 'N/A' };
-            }
-            acc[course].total += 1;
-            if (curr.attendance_status?.toLowerCase() === 'present') {
-              acc[course].attended += 1;
-            }
-            return acc;
-          }, {});
-
-          const formattedSummary = Object.keys(grouped).map((courseName) => ({
-            courseID: grouped[courseName].code,
-            Subject: courseName,
-            Attendence: grouped[courseName].attended,
-            totalClasses: grouped[courseName].total
-          }));
-
-          setSummaryData(formattedSummary);
+        // First, get student details to find section_id and semester
+        const studentResponse = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/admin/students`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        
+        const students = await studentResponse.json();
+        const student = students.find(s => s.roll_number === props.RollNo);
+        
+        if (!student) {
+          setError("Student not found");
+          setLoading(false);
+          return;
         }
+
+        // Get courses for this section
+        const coursesResponse = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/admin/courses`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        const allCourses = await coursesResponse.json();
+
+        // Get timetable to find which courses this student has
+        const timetableResponse = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/common/timetable?section_id=${student.section_id}&semester=1`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        const timetable = await timetableResponse.json();
+        
+        // Get unique course codes from timetable
+        const courseCodes = [...new Set(timetable.map(t => t.course_code))];
+
+        // For each course, fetch attendance data using periodic endpoint
+        // We'll use the current month, but the endpoint returns total attendance too
+        const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
+        
+        const attendancePromises = courseCodes.map(async (courseCode) => {
+          try {
+            const response = await fetch(
+              `${import.meta.env.VITE_API_URL}/api/attendance/periodic?sectionId=${student.section_id}&semester=1&courseCode=${courseCode}&month=${currentMonth}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+            
+            if (!response.ok) return null;
+            
+            const data = await response.json();
+            
+            // Find this student's data
+            const studentData = data.find(d => d.studentName === props.RollNo);
+            
+            if (studentData) {
+              const course = allCourses.find(c => c.course_code === courseCode);
+              return {
+                courseID: courseCode,
+                Subject: course ? course.course_name : courseCode,
+                Attendence: studentData.totalAttended,
+                totalClasses: studentData.totalClasses,
+                percentage: studentData.overallPercentage
+              };
+            }
+            return null;
+          } catch (err) {
+            console.error(`Error fetching attendance for ${courseCode}:`, err);
+            return null;
+          }
+        });
+
+        const results = await Promise.all(attendancePromises);
+        const validResults = results.filter(r => r !== null && r.totalClasses > 0);
+        
+        setSummaryData(validResults);
+        
       } catch (err) {
         console.error(err);
+        setError("Failed to load attendance data");
       } finally {
         setLoading(false);
       }
@@ -60,7 +119,6 @@ const StudentReport = (props) => {
   return (
     <div className="StudentReportPage">
       <main>
-        {/* TOP HEADER - DROPDOWN REMOVED */}
         <div className='opt' style={headerContainerStyle}>
           <div className='details' style={{ textAlign: 'left', fontWeight: 'bold' }}>
             <p>Name : {props.StudentName}</p>
@@ -71,14 +129,19 @@ const StudentReport = (props) => {
         <div className='cards' style={{ margin: '30px auto', width: '97%' }}>
           {loading ? (
             <p style={{ textAlign: 'center' }}>Loading Report...</p>
+          ) : error ? (
+            <p style={{ textAlign: 'center', color: 'red' }}>{error}</p>
+          ) : summaryData.length === 0 ? (
+            <p style={{ textAlign: 'center' }}>No attendance data available</p>
           ) : (
-            /* SHOWING SUMMARY TABLE ONLY AS DROPDOWN IS GONE */
             <div className='student-details' style={cardContainerStyle}>
               <table border={0} style={{ width: '90%', borderCollapse: 'separate', borderSpacing: '3px 10px' }}>
                 <thead>
                   <tr style={{ height: '7vh', fontSize: '2vh' }}>
                     <th>CourseID</th>
                     <th>Subject</th>
+                    <th>Classes Attended</th>
+                    <th>Total Classes</th>
                     <th>Attendance %</th>
                   </tr>
                 </thead>
@@ -90,7 +153,6 @@ const StudentReport = (props) => {
                       Subject={item.Subject}
                       Attendence={item.Attendence}
                       totalClasses={item.totalClasses}
-                      /* Optional: Add an onClick here if you want to select a subject by clicking the row instead */
                     />
                   ))}
                 </tbody>
