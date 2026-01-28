@@ -15,11 +15,76 @@ import Reports from "./Reports";
 
 const AdminDashboard = () => {
   const [activeSection, setActiveSection] = useState("dashboard");
+  const [showAuthKey, setShowAuthKey] = useState(false);
+  const [authKey, setAuthKey] = useState("");
+  const [editAuthKey, setEditAuthKey] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  
   const role = localStorage.getItem("role");
 
-  function handleFacultyCode() {
+  const handleFacultyCode = async () => {
+    if (showAuthKey) {
+      // Cancel - hide the panel
+      setShowAuthKey(false);
+      setIsEditing(false);
+      setMessage("");
+      return;
+    }
+
+    // Show the panel and fetch the key
+    setShowAuthKey(true);
+    setLoading(true);
+    setMessage("");
     
-  }
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch("http://localhost:3000/api/faculty/auth-key", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (!response.ok) throw new Error("Failed to fetch authorization key");
+      
+      const data = await response.json();
+      setAuthKey(data.authorization_key);
+      setEditAuthKey(data.authorization_key);
+    } catch (err) {
+      setMessage("Error: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveAuthKey = async () => {
+    setLoading(true);
+    setMessage("");
+    
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch("http://localhost:3000/api/faculty/auth-key", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ authorization_key: editAuthKey })
+      });
+      
+      if (!response.ok) throw new Error("Failed to update authorization key");
+      
+      const data = await response.json();
+      setAuthKey(data.authorization_key);
+      setIsEditing(false);
+      setMessage("Authorization key updated successfully");
+      
+      setTimeout(() => setMessage(""), 3000);
+    } catch (err) {
+      setMessage("Error: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div style={{ display: "flex", height: "100%", minHeight: "100vh" }}>
@@ -60,7 +125,79 @@ const AdminDashboard = () => {
           <button style={navBtn(activeSection === "reports")} onClick={() => setActiveSection("reports")}>Reports</button>
         </nav>
         {role === 'faculty' && (
-          <button style={primaryBtn} onClick={()=>{handleFacultyCode}}>Get Faculty code </button>
+          <>
+            <button 
+              style={showAuthKey ? cancelBtn : primaryBtn} 
+              onClick={handleFacultyCode}
+            >
+              {showAuthKey ? "Cancel" : "Get Faculty code"}
+            </button>
+
+            {/* Auth Key Display Panel */}
+            {showAuthKey && (
+              <div style={authPanel}>
+                <h4 style={{ margin: "0 0 15px 0", fontSize: "14px", color: "#AD3A3C" }}>
+                  {!isEditing ? "Authorization Key" : "Enter New Authorization Key"}
+                </h4>
+                
+                {loading ? (
+                  <p style={{ fontSize: "13px", color: "#666" }}>Loading...</p>
+                ) : (
+                  <>
+                    {!isEditing ? (
+                      <div>
+                        <div style={codeDisplay}>{authKey}</div>
+                        <button 
+                          style={editBtn} 
+                          onClick={() => setIsEditing(true)}
+                        >
+                          Edit Key
+                        </button>
+                      </div>
+                    ) : (
+                      <div>
+                        <input
+                          type="text"
+                          value={editAuthKey}
+                          onChange={(e) => setEditAuthKey(e.target.value)}
+                          style={inputStyle}
+                        />
+                        <div style={{ display: "flex", gap: "8px", marginTop: "10px" }}>
+                          <button 
+                            style={saveBtn} 
+                            onClick={handleSaveAuthKey}
+                            disabled={loading}
+                          >
+                            Save
+                          </button>
+                          <button 
+                            style={cancelSmallBtn} 
+                            onClick={() => {
+                              setIsEditing(false);
+                              setEditAuthKey(authKey);
+                              setMessage("");
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {message && (
+                      <p style={{ 
+                        fontSize: "12px", 
+                        marginTop: "10px", 
+                        color: message.includes("Error") ? "#d32f2f" : "#2e7d32" 
+                      }}>
+                        {message}
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+          </>
         )}
       </aside>
 
@@ -101,7 +238,7 @@ const getSectionTitle = (key) => {
     case "subjects": return "Subject & Course Configuration";
     case "attendance": return "Attendance Overview";
     case "reports": return "Reports";
-    case "shortage": return "Attendance Shortage";
+    case "shortage": return "Attendance Shortage (<75%)";
     default: return "";
   }
 };
@@ -133,6 +270,87 @@ const primaryBtn = {
   border: "none",
   borderRadius: "4px",
   cursor: "pointer",
+};
+
+const cancelBtn = {
+  marginTop: "12px",
+  padding: "8px 0px",
+  backgroundColor: "transparent",
+  color: "white",
+  border: "1px solid white",
+  borderRadius: "4px",
+  cursor: "pointer",
+};
+
+const authPanel = {
+  marginTop: "15px",
+  padding: "15px",
+  backgroundColor: "white",
+  border: "2px solid #AD3A3C",
+  borderRadius: "6px",
+  color: "#333"
+};
+
+const codeDisplay = {
+  fontSize: "24px",
+  fontWeight: "bold",
+  padding: "12px",
+  color: "#AD3A3C",
+  backgroundColor: "#f5f5f5",
+  borderColor: "#AD3A3C",
+  borderWidth: "2px",
+  borderStyle: "solid",
+  borderRadius: "4px",
+  textAlign: "center",
+  marginBottom: "12px",
+};
+
+const inputStyle = {
+  color: "#AD3A3C",
+  width: "100%",
+  padding: "10px",
+  fontSize: "18px",
+  fontWeight: "bold",
+  textAlign: "center",
+  backgroundColor: "#f5f5f5",
+  border: "2px solid #AD3A3C",
+  borderRadius: "4px",
+};
+
+const editBtn = {
+  width: "100%",
+  padding: "8px",
+  backgroundColor: "#AD3A3C",
+  color: "white",
+  border: "none",
+  borderRadius: "4px",
+  cursor: "pointer",
+  fontSize: "13px",
+  fontWeight: "500"
+};
+
+const saveBtn = {
+  flex: 1,
+  padding: "8px",
+  backgroundColor: "#AD3A3C",
+  color: "white",
+  border: "none",
+  borderRadius: "4px",
+  cursor: "pointer",
+  fontSize: "13px",
+  fontWeight: "500"
+};
+
+const cancelSmallBtn = {
+  flex: 1,
+  padding: "8px",
+  backgroundColor: "#757575",
+  color: "white",
+  border: "none",
+  borderRadius: "4px",
+  cursor: "pointer",
+  fontSize: "13px",
+  fontWeight: "500"
 };
 
 export default AdminDashboard;
