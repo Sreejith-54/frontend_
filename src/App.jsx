@@ -1,4 +1,3 @@
-import './App.css';
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from './pages/Login/AuthContext.jsx'; // Ensure this path is correct
 

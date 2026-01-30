@@ -92,7 +92,7 @@ const AdminDashboard = () => {
       {/* SIDEBAR */}
       <aside style={{ width: "260px", backgroundColor: "#AD3A3C", color: "white", padding: "20px", display: "flex", flexDirection: "column" }}>
         <h2 style={{ fontSize: "1.3rem", marginBottom: "30px", borderBottom: "1px solid rgba(255,255,255,0.3)", paddingBottom: "15px" }}>
-          {role} Portal
+          {role.charAt(0).toUpperCase() + role.slice(1)} Portal
         </h2>
 
         <nav style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
