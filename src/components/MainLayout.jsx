@@ -28,17 +28,16 @@ export default function MainLayout() {
   }
 
   return (
-    <div className="app-container">
-      <main className="content" style={{ minWidth: '100vw' }}>
-        {/* Pass the dynamic links to the Navbar */}
-        <Navbar links={navLinks} />
-        
-        {/* This renders the child routes (Cr, AdminDashboard, etc.) */}
-        <Outlet />
-        <div style={{ backgroundColor: '#AD3A3C' , color: 'white' , display: 'flex',justifyContent: 'center', alignItems: 'center', height: '50px',position:'sticky', bottom:'0', width:'100%' }}>
-          <p>© 2026 ACM Amritapuri All Rights Reserved.</p>
-        </div>
-      </main>
-    </div>
-  );
+  <div className="app-container" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <Navbar links={navLinks} />
+    
+    <main className="content" style={{ flex: 1 }}>
+      <Outlet />
+    </main>
+
+    <footer style={{ backgroundColor: '#AD3A3C', color: 'white', height: '50px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+       <p>© 2026 ACM Student Chapter, Amritapuri All Rights Reserved.</p>
+    </footer>
+  </div>
+);
 }
