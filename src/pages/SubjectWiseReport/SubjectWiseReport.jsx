@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import './subjectwisereport_style.css';
+import './SubjectWiseReport.css';
 
 function SubjectWiseReport() {
   // --- STATE MANAGEMENT ---

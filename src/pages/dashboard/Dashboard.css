@@ -2,7 +2,6 @@
 .monthly-attendance {
     padding: 20px;
     background: #f5f5f5;
-    min-height: 100vh;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
   
@@ -264,4 +263,105 @@
   }
 
 
+  /* ... (Keep existing Filter and Container styles) ... */
+
+/* Search Bar Styles */
+.search-container {
+    margin-bottom: 15px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+    outline: none;
+    transition: border 0.2s;
+}
+
+.search-input:focus {
+    border-color: #AD3A3C;
+    box-shadow: 0 0 0 3px rgba(173, 58, 60, 0.1);
+}
+
+/* --- GRID LAYOUT & SCROLLING --- */
+
+.attendance-row {
+  display: grid;
+  /* Fixed Width for Name | Flexible Scroll area | Fixed Width Summaries */
+  grid-template-columns: 180px 1fr 100px 100px 100px; 
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  padding: 10px 15px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  min-height: 50px;
+  position: relative; /* Context for sticky */
+}
+
+/* 1. Student Name - STICKY COLUMN */
+.student-name {
+  font-size: 14px;
+  color: #212529;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
   
+  /* Sticky Logic */
+  position: sticky;
+  left: 0;
+   /* Sit above scrolling content if it overlaps */
+  background-color: inherit; /* Match row background */
+}
+
+/* 2. Scrollable Dates Column */
+.attendance-days {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  /* Handles the 30 days scrolling */
+  overflow-x: auto; 
+  padding: 5px 0;
+  
+  /* Ensure it takes full available width in the grid cell */
+  max-width: 100%; 
+}
+
+/* Better Scrollbar for large datasets (30+ days) */
+.attendance-days::-webkit-scrollbar {
+  height: 8px; /* Slightly taller for easier clicking */
+}
+.attendance-days::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+.attendance-days::-webkit-scrollbar-thumb {
+  background-color: #bbb;
+  border-radius: 4px;
+  border: 1px solid #f1f1f1;
+}
+.attendance-days::-webkit-scrollbar-thumb:hover {
+  background-color: #888;
+}
+
+/* ... (Keep existing Day Box, Summary, and Legend styles) ... */
+
+/* Ensure header row background covers sticky elements correctly */
+.attendance-row.header {
+  background: #e9ecef;
+  font-weight: 700;
+  color: #495057;
+  z-index: 5; /* Header sits on top of everything */
+}
+
+/* Header sticky fix */
+.attendance-row.header .student-name {
+    background-color: #e9ecef;
+}
+
+/* ... (Keep Responsive Styles) ... */
