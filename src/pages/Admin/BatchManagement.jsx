@@ -1,7 +1,7 @@
 
 
 import { useState, useEffect } from "react";
-import api from "../utils";
+import api from "../utils/api";
 
 const BatchManagement = () => {
   const [batches, setBatches] = useState([]);

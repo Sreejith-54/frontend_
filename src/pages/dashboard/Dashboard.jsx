@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import api from "../utils"; 
+import api from "../utils/api"; 
 import "./Dashboard.css";
 
 export default function MonthlyAttendanceDashboard() {
