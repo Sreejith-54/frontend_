@@ -38,11 +38,12 @@ const FacultyDirectory = () => {
   const [depts, setDepts] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [showBulkUpload, setShowBulkUpload] = useState(false);
-  const [profileForm, setProfileForm] = useState({ name: "", email: "", dept: "", auth_key: "" });
+  const [profileForm, setProfileForm] = useState({ name: "", email: "", dept_id: "", auth_key: "" });
   const [bulkData, setBulkData] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [bulkDeptId, setBulkDeptId] = useState("");
   const [selectedDept, setSelectedDept] = useState(""); // For filtering the table
+  const [editId,setEditId] = useState("");
 
   useEffect(() => { fetchData(); }, []);
 
@@ -57,11 +58,49 @@ const FacultyDirectory = () => {
     } catch (e) { console.error(e); }
   };
 
+    const handleCancel = () => {
+    setEditId(null);
+    setProfileForm({ name: "", email: "", dept_id: "", auth_key: "" });
+  };
+
+  const handleDelete = async (id) => {    
+    try {
+      await api.delete(`/admin/faculty/${id}`);
+      alert("Faculty Deleted");
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete Faculty");
+    }
+  };
+
+    const handleEdit = (faculty) => {
+    setEditId(faculty.profile_id);
+    setProfileForm({
+      name: faculty.faculty_name,
+      dept_id: faculty.dept_id,
+      email:'',
+      auth_key: faculty.authorization_key
+    });
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleCreateProfile = async (e) => {
     e.preventDefault();
     try {
+      if(editId){
+        await api.put(`/admin/faculty/${editId}`,{
+          name: profileForm.name,
+          dept_id: profileForm.dept_id,
+          auth_key: profileForm.auth_key
+        });
+        alert('successfully updated');
+
+      }else{
         await api.post("/admin/faculty-profile", profileForm);
         alert("Faculty Profile Added!");
+      }
         setShowForm(false);
         setProfileForm({ name: "", email: "", dept_id: "", auth_key: "" });
         fetchData();
@@ -157,8 +196,8 @@ const FacultyDirectory = () => {
         </div>
         <div style={{display:'flex', gap:'10px'}}>
           <button style={primaryBtn} onClick={downloadTemplate}>Download Template</button>
-          <button style={primaryBtn} onClick={() => {setShowBulkUpload(!showBulkUpload); setShowForm(false)}}>{showBulkUpload ? "Cancel" : "+ Upload Profiles"}</button>
-          <button style={primaryBtn} onClick={() => {setShowForm(!showForm); setShowBulkUpload(false)}}>{showForm ? "Cancel" : "+ Add Profile"}</button>
+          <button style={primaryBtn} onClick={() => {setShowBulkUpload(!showBulkUpload); setShowForm(false); setEditId(false)}}>{showBulkUpload ? "Cancel" : "+ Upload Profiles"}</button>
+          <button style={primaryBtn} onClick={() => {setShowForm(!showForm); setShowBulkUpload(false); handleCancel()}}>{showForm ? "Cancel" : "+ Add Profile"}</button>
         </div>
       </div>
 
@@ -200,10 +239,10 @@ const FacultyDirectory = () => {
         <div style={formContainer}>
           <form onSubmit={handleCreateProfile} style={{ display: "flex", gap: "15px", alignItems: "flex-end", flexWrap:"wrap" }}>
             <div style={{flex:1}}><label style={labelStyle}>Name</label><input style={inputStyle} value={profileForm.name} onChange={e=>setProfileForm({...profileForm, name:e.target.value})} required /></div>
-            <div style={{flex:1}}><label style={labelStyle}>Email</label><input type="email" style={inputStyle} value={profileForm.email} onChange={e=>setProfileForm({...profileForm, email:e.target.value})} required /></div>
+            <div style={{flex:1}}><label style={labelStyle}>Email</label><input type="email" style={inputStyle} value={profileForm.email} onChange={e=>setProfileForm({...profileForm, email:e.target.value})} required={!editId} disabled={editId} /></div>
             <div style={{width:'150px'}}><label style={labelStyle}>Dept</label><select style={inputStyle} value={profileForm.dept_id} onChange={e=>setProfileForm({...profileForm, dept_id:e.target.value})} required><option value="">Select</option>{depts.map(d=><option key={d.id} value={d.id}>{d.dept_code}</option>)}</select></div>
             <div style={{width:'150px'}}><label style={labelStyle}>Auth Key</label><input style={inputStyle} value={profileForm.auth_key} onChange={e=>setProfileForm({...profileForm, auth_key:e.target.value})} required /></div>
-            <button type="submit" style={primaryBtn}>Save</button>
+            <button type="submit" style={primaryBtn} >{!editId? 'Save' : 'Update'}</button>
           </form>
         </div>
       )}
@@ -221,7 +260,7 @@ const FacultyDirectory = () => {
 
       {selectedDept ? (
         <table style={tableStyle}>
-          <thead><tr><th style={thStyle}>Name</th><th style={thStyle}>Email</th><th style={thStyle}>Dept</th><th style={thStyle}>Auth Key</th></tr></thead>
+          <thead><tr><th style={thStyle}>Name</th><th style={thStyle}>Email</th><th style={thStyle}>Dept</th><th style={thStyle}>Auth Key</th><th style={thStyle}>Action</th></tr></thead>
           <tbody>
             {filteredFacultyList.length > 0 ? (
               filteredFacultyList.map(f=>(
@@ -230,6 +269,10 @@ const FacultyDirectory = () => {
                   <td style={tdStyle}>{f.email}</td>
                   <td style={tdStyle}>{f.dept_code}</td>
                   <td style={tdStyle}>{f.authorization_key}</td>
+                  <td style={tdStyle}>
+                    <button onClick={()=>(handleEdit(f))} style={editActionBtn}>Edit</button>
+                    <button onClick={()=>(handleDelete(f.profile_id))} style={deleteActionBtn}>Delete</button>
+                  </td>
                 </tr>
               ))
             ) : (
@@ -430,5 +473,7 @@ const btnStyle = { padding: "8px 20px", background: "#333", color: "white", bord
 const tableStyle = { width: "100%", borderCollapse: "collapse", marginTop: "15px", backgroundColor:'white' };
 const thStyle = { textAlign: "left", padding: "10px", background: "#eee", borderBottom: "2px solid #ddd", color:'#333', fontSize:'13px' };
 const tdStyle = { padding: "10px", borderBottom: "1px solid #eee", color:'#444', fontSize:'13px' };
+const editActionBtn = { padding: "6px 12px", background: "#f39c12", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", marginRight: "5px", fontSize: "12px" };
+const deleteActionBtn = { padding: "6px 12px", background: "#e74c3c", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "12px" };
 
 export default UserManagement;
