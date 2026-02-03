@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect,useRef } from "react";
 import api from "../utils/api";
 
 const ViewTimeTable = () => {
@@ -7,7 +7,7 @@ const ViewTimeTable = () => {
   const [depts, setDepts] = useState([]);
   const [batches, setBatches] = useState([]);
   const [sections, setSections] = useState([]);
-  
+
   // Selections
   const [selectedDept, setSelectedDept] = useState("");
   const [selectedBatch, setSelectedBatch] = useState("");
@@ -25,12 +25,26 @@ const ViewTimeTable = () => {
   const [selectedSlotDetails, setSelectedSlotDetails] = useState(null);
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [analytics, setAnalytics] = useState({ present: 0, absent: 0, total: 0, percentage: 0 });
+  const [deptSearch, setDeptSearch] = useState("");
+  const [deptOpen, setDeptOpen] = useState(false);
+  const deptRef = useRef(null);
 
+  const [batchSearch, setBatchSearch] = useState("");
+  const [batchOpen, setBatchOpen] = useState(false);
+  const batchRef = useRef(null);
+
+  const [sectionSearch, setSectionSearch] = useState("");
+  const [sectionOpen, setSectionOpen] = useState(false);
+  const sectionRef = useRef(null);
+
+  const [semesterSearch, setSemesterSearch] = useState("");
+  const [semesterOpen, setSemesterOpen] = useState(false);
+  const semesterRef = useRef(null);
   // --- HELPERS ---
   function getMonday(d) {
     d = new Date(d);
     var day = d.getDay(),
-        diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      diff = d.getDate() - day + (day === 0 ? -6 : 1);
     return new Date(d.setDate(diff));
   }
 
@@ -38,7 +52,16 @@ const ViewTimeTable = () => {
   useEffect(() => {
     api.get("/admin/depts").then(res => setDepts(res.data)).catch(console.error);
   }, []);
-
+  useEffect(() => {
+    const close = (e) => {
+      if (deptRef.current && !deptRef.current.contains(e.target)) setDeptOpen(false);
+      if (batchRef.current && !batchRef.current.contains(e.target)) setBatchOpen(false);
+      if (sectionRef.current && !sectionRef.current.contains(e.target)) setSectionOpen(false);
+      if (semesterRef.current && !semesterRef.current.contains(e.target)) setSemesterOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, []);
   useEffect(() => {
     if (selectedDept) {
       api.get("/admin/batches").then(res => {
@@ -79,50 +102,50 @@ const ViewTimeTable = () => {
     if (!entry) return;
 
     if (entry.session_category === 'free') {
-        alert("This period is marked as FREE.");
-        return;
+      alert("This period is marked as FREE.");
+      return;
     }
 
     if (!entry.session_id) {
-        alert("Attendance not marked yet.");
-        return;
+      alert("Attendance not marked yet.");
+      return;
     }
 
     // 1. Prepare Modal Data
     setShowModal(true);
     setModalLoading(true);
-    
+
     // Store both Original and Actual (Swapped) details
     setSelectedSlotDetails({
-        original_code: entry.course_code,
-        original_name: entry.course_name,
-        actual_code: entry.actual_course_code,     // Will be null if not swapped
-        actual_name: entry.actual_course_name,     // Will be null if not swapped
-        faculty: entry.faculty_name,
-        date: dateString,
-        type: entry.session_category
+      original_code: entry.course_code,
+      original_name: entry.course_name,
+      actual_code: entry.actual_course_code,     // Will be null if not swapped
+      actual_name: entry.actual_course_name,     // Will be null if not swapped
+      faculty: entry.faculty_name,
+      date: dateString,
+      type: entry.session_category
     });
 
     // 2. Fetch Attendance Records
     try {
-        const res = await api.get(`/admin/records-by-session/${entry.session_id}`);
-        const records = res.data;
-        setAttendanceRecords(records);
+      const res = await api.get(`/admin/records-by-session/${entry.session_id}`);
+      const records = res.data;
+      setAttendanceRecords(records);
 
-        // 3. Calculate Analytics
-        const total = records.length;
-        const present = records.filter(r => r.status && r.status.toLowerCase() === 'present').length;
-        const absent = total - present;
-        const percentage = total > 0 ? ((present / total) * 100).toFixed(1) : 0;
+      // 3. Calculate Analytics
+      const total = records.length;
+      const present = records.filter(r => r.status && r.status.toLowerCase() === 'present').length;
+      const absent = total - present;
+      const percentage = total > 0 ? ((present / total) * 100).toFixed(1) : 0;
 
-        setAnalytics({ present, absent, total, percentage });
+      setAnalytics({ present, absent, total, percentage });
 
     } catch (err) {
-        console.error(err);
-        alert("Failed to fetch records");
-        setShowModal(false);
+      console.error(err);
+      alert("Failed to fetch records");
+      setShowModal(false);
     } finally {
-        setModalLoading(false);
+      setModalLoading(false);
     }
   };
 
@@ -130,33 +153,107 @@ const ViewTimeTable = () => {
     <div>
       {/* FILTER BAR */}
       <div style={filterContainer}>
-        <div style={{display:'flex', gap:'10px', flexWrap:'wrap', flex:1}}>
-            <select style={selectStyle} onChange={e => setSelectedDept(e.target.value)} value={selectedDept}>
-              <option value="">Select Dept</option>
-              {depts.map(d => <option key={d.id} value={d.id}>{d.dept_name}</option>)}
-            </select>
-            <select style={selectStyle} onChange={e => setSelectedBatch(e.target.value)} value={selectedBatch} disabled={!selectedDept}>
-              <option value="">Select Batch</option>
-              {batches.map(b => <option key={b.id} value={b.id}>{b.batch_name}</option>)}
-            </select>
-            <select style={selectStyle} onChange={e => setSelectedSection(e.target.value)} value={selectedSection} disabled={!selectedBatch}>
-              <option value="">Select Section</option>
-              {sections.map(s => <option key={s.id} value={s.id}>{s.section_name}</option>)}
-            </select>
-            <select style={selectStyle} onChange={e => setSemester(e.target.value)} value={semester}>
-              {[1,2,3,4,5,6,7,8].map(n => <option key={n} value={n}>Sem {n}</option>)}
-            </select>
-            <input type="date" style={selectStyle} value={selectedDate} onChange={e => setSelectedDate(e.target.value)}/>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', flex: 1 }}>
+
+          {/* Dept */}
+          <div style={{ position: "relative" }} ref={deptRef}>
+            <input
+              type="text"
+              value={deptSearch}
+              onChange={(e) => { setDeptSearch(e.target.value); setDeptOpen(true); }}
+              onFocus={() => setDeptOpen(true)}
+              placeholder={depts.find(d => d.id == selectedDept)?.dept_name || "Select Dept"}
+              style={selectStyle}
+            />
+            {deptOpen && (
+              <ul style={dropdownListStyle}>
+                {depts.filter(d => d.dept_name.toLowerCase().includes(deptSearch.toLowerCase())).map(d => (
+                  <li key={d.id} style={dropdownItemStyle} onClick={() => { setSelectedDept(d.id); setDeptSearch(""); setDeptOpen(false); setSelectedBatch(""); setSelectedSection(""); }}>
+                    {d.dept_name}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Batch */}
+          <div style={{ position: "relative" }} ref={batchRef}>
+            <input
+              type="text"
+              value={batchSearch}
+              onChange={(e) => { setBatchSearch(e.target.value); setBatchOpen(true); }}
+              onFocus={() => setBatchOpen(true)}
+              placeholder={batches.find(b => b.id == selectedBatch)?.batch_name || "Select Batch"}
+              disabled={!selectedDept}
+              style={{ ...selectStyle, background: !selectedDept ? "#eee" : "white", cursor: !selectedDept ? "not-allowed" : "text" }}
+            />
+            {batchOpen && selectedDept && (
+              <ul style={dropdownListStyle}>
+                {batches.filter(b => b.batch_name.toLowerCase().includes(batchSearch.toLowerCase())).map(b => (
+                  <li key={b.id} style={dropdownItemStyle} onClick={() => { setSelectedBatch(b.id); setBatchSearch(""); setBatchOpen(false); setSelectedSection(""); }}>
+                    {b.batch_name}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Section */}
+          <div style={{ position: "relative" }} ref={sectionRef}>
+            <input
+              type="text"
+              value={sectionSearch}
+              onChange={(e) => { setSectionSearch(e.target.value); setSectionOpen(true); }}
+              onFocus={() => setSectionOpen(true)}
+              placeholder={sections.find(s => s.id == selectedSection)?.section_name || "Select Section"}
+              disabled={!selectedBatch}
+              style={{ ...selectStyle, background: !selectedBatch ? "#eee" : "white", cursor: !selectedBatch ? "not-allowed" : "text" }}
+            />
+            {sectionOpen && selectedBatch && (
+              <ul style={dropdownListStyle}>
+                {sections.filter(s => s.section_name.toLowerCase().includes(sectionSearch.toLowerCase())).map(s => (
+                  <li key={s.id} style={dropdownItemStyle} onClick={() => { setSelectedSection(s.id); setSectionSearch(""); setSectionOpen(false); }}>
+                    {s.section_name}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Semester */}
+          <div style={{ position: "relative" }} ref={semesterRef}>
+            <input
+              type="text"
+              value={semesterSearch}
+              onChange={(e) => { setSemesterSearch(e.target.value); setSemesterOpen(true); }}
+              onFocus={() => setSemesterOpen(true)}
+              placeholder={`Sem ${semester}`}
+              style={selectStyle}
+            />
+            {semesterOpen && (
+              <ul style={dropdownListStyle}>
+                {[1, 2, 3, 4, 5, 6, 7, 8].filter(n => `Sem ${n}`.toLowerCase().includes(semesterSearch.toLowerCase())).map(n => (
+                  <li key={n} style={dropdownItemStyle} onClick={() => { setSemester(n); setSemesterSearch(""); setSemesterOpen(false); }}>
+                    Sem {n}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Date left as it is */}
+          <input type="date" style={selectStyle} value={selectedDate} onChange={e => setSelectedDate(e.target.value)} />
+
         </div>
         <button onClick={fetchTimetable} style={btnStyle}>Load View</button>
       </div>
 
       {/* LEGEND */}
-      <div style={{display:'flex', gap:'20px', margin:'15px 0', fontSize:'13px', padding:'10px', background:'#fff', borderRadius:'4px'}}>
-          <span style={{display:'flex', alignItems:'center', gap:'5px'}}><span style={{...legendDot, background:'#d4edda'}}></span> Normal</span>
-          <span style={{display:'flex', alignItems:'center', gap:'5px'}}><span style={{...legendDot, background:'#fff3cd'}}></span> Swap</span>
-          <span style={{display:'flex', alignItems:'center', gap:'5px'}}><span style={{...legendDot, background:'#e2e3f5'}}></span> Free</span>
-          <span style={{display:'flex', alignItems:'center', gap:'5px'}}><span style={{...legendDot, background:'#f8d7da'}}></span> Unmarked</span>
+      <div style={{ display: 'flex', gap: '20px', margin: '15px 0', fontSize: '13px', padding: '10px', background: '#fff', borderRadius: '4px' }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><span style={{ ...legendDot, background: '#d4edda' }}></span> Normal</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><span style={{ ...legendDot, background: '#fff3cd' }}></span> Swap</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><span style={{ ...legendDot, background: '#e2e3f5' }}></span> Free</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><span style={{ ...legendDot, background: '#f8d7da' }}></span> Unmarked</span>
       </div>
 
       {/* GRID */}
@@ -173,104 +270,104 @@ const ViewTimeTable = () => {
       {/* ATTENDANCE MODAL */}
       {showModal && (
         <div style={modalOverlay}>
-            <div style={modalContent}>
-                
-                {/* MODAL HEADER - Updated to show Codes */}
-                <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'15px', borderBottom:'1px solid #eee', paddingBottom:'10px'}}>
-                    <div>
-                        {selectedSlotDetails?.type === 'swap' ? (
-                            <>
-                                {/* Show Actual Swapped Course */}
-                                <h3 style={{margin:0, color:'#856404'}}>
-                                    {selectedSlotDetails.actual_code} : {selectedSlotDetails.actual_name}
-                                </h3>
-                                {/* Show Original Course Strikethrough */}
-                                <div style={{fontSize:'12px', color:'#999', textDecoration:'line-through', marginTop:'2px'}}>
-                                    Originally: {selectedSlotDetails.original_code} - {selectedSlotDetails.original_name}
-                                </div>
-                            </>
-                        ) : (
-                            /* Normal Session */
-                            <h3 style={{margin:0, color:'#AD3A3C'}}>
-                                {selectedSlotDetails?.original_code} : {selectedSlotDetails?.original_name}
-                            </h3>
-                        )}
-                    </div>
-                    <button onClick={() => setShowModal(false)} style={{background:'none', border:'none', fontSize:'24px', cursor:'pointer', lineHeight:'20px'}}>×</button>
-                </div>
+          <div style={modalContent}>
 
-                {/* INFO BOX */}
-                {selectedSlotDetails && (
-                    <div style={{marginBottom:'15px', fontSize:'13px', color:'#555', display:'flex', justifyContent:'space-between', background:'#f9f9f9', padding:'10px', borderRadius:'6px'}}>
-                        <div>
-                            {selectedSlotDetails.type === 'swap' && (
-                                <div style={{color:'#856404', marginBottom:'4px', fontWeight:'bold'}}>
-                                    Swapped To: {selectedSlotDetails.actual_code}
-                                </div>
-                            )}
-                            <div><strong>Date:</strong> {selectedSlotDetails.date}</div>
-                            <div><strong>Faculty:</strong> {selectedSlotDetails.faculty}</div>
-                        </div>
-                        <div style={{textAlign:'right'}}>
-                             <div style={{fontSize:'10px', textTransform:'uppercase', fontWeight:'bold', color:'#999'}}>Type</div>
-                             <div style={{fontWeight:'bold', color: selectedSlotDetails.type === 'swap' ? '#856404' : '#155724'}}>
-                                {selectedSlotDetails.type.toUpperCase()}
-                             </div>
-                        </div>
+            {/* MODAL HEADER - Updated to show Codes */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
+              <div>
+                {selectedSlotDetails?.type === 'swap' ? (
+                  <>
+                    {/* Show Actual Swapped Course */}
+                    <h3 style={{ margin: 0, color: '#856404' }}>
+                      {selectedSlotDetails.actual_code} : {selectedSlotDetails.actual_name}
+                    </h3>
+                    {/* Show Original Course Strikethrough */}
+                    <div style={{ fontSize: '12px', color: '#999', textDecoration: 'line-through', marginTop: '2px' }}>
+                      Originally: {selectedSlotDetails.original_code} - {selectedSlotDetails.original_name}
                     </div>
+                  </>
+                ) : (
+                  /* Normal Session */
+                  <h3 style={{ margin: 0, color: '#AD3A3C' }}>
+                    {selectedSlotDetails?.original_code} : {selectedSlotDetails?.original_name}
+                  </h3>
                 )}
-
-                {/* ANALYTICS & LIST */}
-                {!modalLoading && (
-                    <div style={{marginBottom:'20px'}}>
-                        <div style={{display:'flex', justifyContent:'space-between', marginBottom:'5px', fontSize:'14px', fontWeight:'bold'}}>
-                            <span style={{color:'#155724'}}>Present: {analytics.present}</span>
-                            <span style={{color:'#721c24'}}>Absent: {analytics.absent}</span>
-                            <span>{analytics.percentage}%</span>
-                        </div>
-                        <div style={{height:'10px', width:'100%', background:'#e9ecef', borderRadius:'5px', overflow:'hidden'}}>
-                            <div style={{
-                                height:'100%', 
-                                width: `${analytics.percentage}%`, 
-                                background: parseFloat(analytics.percentage) < 75 ? '#dc3545' : '#28a745',
-                                transition: 'width 0.5s ease-in-out'
-                            }}></div>
-                        </div>
-                    </div>
-                )}
-
-                {modalLoading ? <p>Loading records...</p> : (
-                    <div style={{maxHeight:'350px', overflowY:'auto', border:'1px solid #eee', borderRadius:'4px'}}>
-                        <table style={{width:'100%', borderCollapse:'collapse', fontSize:'13px'}}>
-                            <thead style={{position:'sticky', top:0, background:'#eee'}}>
-                                <tr>
-                                    <th style={modalTh}>Roll No</th>
-                                    <th style={modalTh}>Name</th>
-                                    <th style={modalTh}>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {attendanceRecords.map((rec, idx) => (
-                                    <tr key={idx} style={{background: idx % 2 === 0 ? '#fff' : '#fcfcfc'}}>
-                                        <td style={modalTd}>{rec.roll_number}</td>
-                                        <td style={modalTd}>{rec.full_name}</td>
-                                        <td style={modalTd}>
-                                            <span style={{
-                                                padding:'3px 8px', borderRadius:'10px', fontSize:'11px', fontWeight:'bold',
-                                                background: rec.status.toLowerCase() === 'present' ? '#d4edda' : '#f8d7da',
-                                                color: rec.status.toLowerCase() === 'present' ? '#155724' : '#721c24'
-                                            }}>
-                                                {rec.status}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                        {attendanceRecords.length === 0 && <p style={{textAlign:'center', color:'#999', padding:'10px'}}>No records found.</p>}
-                    </div>
-                )}
+              </div>
+              <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', lineHeight: '20px' }}>×</button>
             </div>
+
+            {/* INFO BOX */}
+            {selectedSlotDetails && (
+              <div style={{ marginBottom: '15px', fontSize: '13px', color: '#555', display: 'flex', justifyContent: 'space-between', background: '#f9f9f9', padding: '10px', borderRadius: '6px' }}>
+                <div>
+                  {selectedSlotDetails.type === 'swap' && (
+                    <div style={{ color: '#856404', marginBottom: '4px', fontWeight: 'bold' }}>
+                      Swapped To: {selectedSlotDetails.actual_code}
+                    </div>
+                  )}
+                  <div><strong>Date:</strong> {selectedSlotDetails.date}</div>
+                  <div><strong>Faculty:</strong> {selectedSlotDetails.faculty}</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 'bold', color: '#999' }}>Type</div>
+                  <div style={{ fontWeight: 'bold', color: selectedSlotDetails.type === 'swap' ? '#856404' : '#155724' }}>
+                    {selectedSlotDetails.type.toUpperCase()}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ANALYTICS & LIST */}
+            {!modalLoading && (
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', fontSize: '14px', fontWeight: 'bold' }}>
+                  <span style={{ color: '#155724' }}>Present: {analytics.present}</span>
+                  <span style={{ color: '#721c24' }}>Absent: {analytics.absent}</span>
+                  <span>{analytics.percentage}%</span>
+                </div>
+                <div style={{ height: '10px', width: '100%', background: '#e9ecef', borderRadius: '5px', overflow: 'hidden' }}>
+                  <div style={{
+                    height: '100%',
+                    width: `${analytics.percentage}%`,
+                    background: parseFloat(analytics.percentage) < 75 ? '#dc3545' : '#28a745',
+                    transition: 'width 0.5s ease-in-out'
+                  }}></div>
+                </div>
+              </div>
+            )}
+
+            {modalLoading ? <p>Loading records...</p> : (
+              <div style={{ maxHeight: '350px', overflowY: 'auto', border: '1px solid #eee', borderRadius: '4px' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                  <thead style={{ position: 'sticky', top: 0, background: '#eee' }}>
+                    <tr>
+                      <th style={modalTh}>Roll No</th>
+                      <th style={modalTh}>Name</th>
+                      <th style={modalTh}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {attendanceRecords.map((rec, idx) => (
+                      <tr key={idx} style={{ background: idx % 2 === 0 ? '#fff' : '#fcfcfc' }}>
+                        <td style={modalTd}>{rec.roll_number}</td>
+                        <td style={modalTd}>{rec.full_name}</td>
+                        <td style={modalTd}>
+                          <span style={{
+                            padding: '3px 8px', borderRadius: '10px', fontSize: '11px', fontWeight: 'bold',
+                            background: rec.status.toLowerCase() === 'present' ? '#d4edda' : '#f8d7da',
+                            color: rec.status.toLowerCase() === 'present' ? '#155724' : '#721c24'
+                          }}>
+                            {rec.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {attendanceRecords.length === 0 && <p style={{ textAlign: 'center', color: '#999', padding: '10px' }}>No records found.</p>}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -296,23 +393,23 @@ const TimetableGrid = ({ data, startDate, onSlotClick }) => {
     if (!entry) return style;
 
     if (entry.session_category === 'free') {
-        style.backgroundColor = "#e2e3f5";
-        style.color = "#383d41";
+      style.backgroundColor = "#e2e3f5";
+      style.color = "#383d41";
     } else if (entry.session_category === 'swap') {
-        style.backgroundColor = "#fff3cd";
-        style.color = "#856404";
+      style.backgroundColor = "#fff3cd";
+      style.color = "#856404";
     } else if (entry.session_category === 'normal') {
-        style.backgroundColor = "#d4edda";
-        style.color = "#155724";
+      style.backgroundColor = "#d4edda";
+      style.color = "#155724";
     } else {
-        // Unmarked check
-        const today = new Date();
-        today.setHours(0,0,0,0);
-        rowDate.setHours(0,0,0,0);
-        if (rowDate < today) {
-            style.backgroundColor = "#f8d7da";
-            style.color = "#721c24";
-        }
+      // Unmarked check
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      rowDate.setHours(0, 0, 0, 0);
+      if (rowDate < today) {
+        style.backgroundColor = "#f8d7da";
+        style.color = "#721c24";
+      }
     }
     return style;
   };
@@ -321,20 +418,20 @@ const TimetableGrid = ({ data, startDate, onSlotClick }) => {
     <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "center", border: "1px solid #ddd" }}>
       <thead>
         <tr>
-          <th style={{...thStyle, width:'100px'}}>Day</th>
+          <th style={{ ...thStyle, width: '100px' }}>Day</th>
           {slots.map(s => <th key={s} style={thStyle}>{s}</th>)}
         </tr>
       </thead>
       <tbody>
         {days.map(day => {
           const rowDate = getRowDate(day);
-          const dateString = rowDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year:'numeric' });
-          
+          const dateString = rowDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
           return (
             <tr key={day}>
-              <td style={{ ...tdStyle, fontWeight: "bold", background: "#f9f9f9", borderRight:'2px solid #ddd', cursor:'default' }}>
-                <div style={{fontSize:'14px', color:'#333'}}>{day}</div>
-                <div style={{fontSize:'11px', color:'#888'}}>{dateString}</div>
+              <td style={{ ...tdStyle, fontWeight: "bold", background: "#f9f9f9", borderRight: '2px solid #ddd', cursor: 'default' }}>
+                <div style={{ fontSize: '14px', color: '#333' }}>{day}</div>
+                <div style={{ fontSize: '11px', color: '#888' }}>{dateString}</div>
               </td>
               {slots.map(slot => {
                 const entry = getSlotData(day, slot);
@@ -344,35 +441,35 @@ const TimetableGrid = ({ data, startDate, onSlotClick }) => {
                   <td key={slot} style={style} onClick={() => onSlotClick(entry, dateString)}>
                     {entry ? (
                       <div style={{ fontSize: "11px", lineHeight: "1.3" }}>
-                        
+
                         {/* CELL CONTENT LOGIC */}
                         {entry.session_category === 'swap' ? (
-                            <>
-                                {/* 1. Actual (Swapped) Course Code - Bold */}
-                                <strong style={{display:'block', color:'#856404', fontSize:'12px'}}>
-                                    {entry.actual_course_code}
-                                </strong>
-                                {/* 2. Original (Scheduled) Course Code - Strikethrough */}
-                                <span style={{fontSize:'10px', textDecoration:'line-through', color:'#bda06d'}}>
-                                    {entry.course_code}
-                                </span>
-                            </>
+                          <>
+                            {/* 1. Actual (Swapped) Course Code - Bold */}
+                            <strong style={{ display: 'block', color: '#856404', fontSize: '12px' }}>
+                              {entry.actual_course_code}
+                            </strong>
+                            {/* 2. Original (Scheduled) Course Code - Strikethrough */}
+                            <span style={{ fontSize: '10px', textDecoration: 'line-through', color: '#bda06d' }}>
+                              {entry.course_code}
+                            </span>
+                          </>
                         ) : (
-                            /* Normal: Show Name and Code */
-                            <>
-                                <strong style={{display:'block'}}>{entry.course_name}</strong>
-                                <span style={{fontSize:'9px', color:'#666'}}>({entry.course_code})</span>
-                            </>
+                          /* Normal: Show Name and Code */
+                          <>
+                            <strong style={{ display: 'block' }}>{entry.course_name}</strong>
+                            <span style={{ fontSize: '9px', color: '#666' }}>({entry.course_code})</span>
+                          </>
                         )}
 
                         {/* Extra Info */}
                         {entry.session_category === 'free' ? (
-                            <span style={{fontWeight:'bold', fontSize:'10px'}}>FREE</span>
+                          <span style={{ fontWeight: 'bold', fontSize: '10px' }}>FREE</span>
                         ) : (
-                            <>
-                                <div style={{fontSize:'10px', marginTop:'2px'}}>{entry.faculty_name}</div>
-                                {entry.room_info && <div style={{ fontSize: "9px", opacity: 0.7 }}>[{entry.room_info}]</div>}
-                            </>
+                          <>
+                            <div style={{ fontSize: '10px', marginTop: '2px' }}>{entry.faculty_name}</div>
+                            {entry.room_info && <div style={{ fontSize: "9px", opacity: 0.7 }}>[{entry.room_info}]</div>}
+                          </>
                         )}
                       </div>
                     ) : "-"}
@@ -388,12 +485,12 @@ const TimetableGrid = ({ data, startDate, onSlotClick }) => {
 };
 
 // --- STYLES ---
-const filterContainer = { display: "flex", gap: "10px", background: "#f5f5f5", padding: "15px", borderRadius: "8px", alignItems: "center", flexWrap: "wrap", border:"1px solid #ddd" };
-const selectStyle = { padding: "8px", borderRadius: "4px", border: "1px solid #ccc", minWidth: "100px", fontSize:'13px' };
-const btnStyle = { padding: "8px 20px", background: "#AD3A3C", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontWeight: "bold", marginLeft:'auto' };
-const emptyState = { textAlign: "center", padding: "50px", color: "#888", fontStyle: "italic", background:"#fff", border:"1px dashed #ccc", marginTop:"20px" };
+const filterContainer = { display: "flex", gap: "10px", background: "#f5f5f5", padding: "15px", borderRadius: "8px", alignItems: "center", flexWrap: "wrap", border: "1px solid #ddd" };
+const selectStyle = { padding: "8px", borderRadius: "4px", border: "1px solid #ccc", minWidth: "100px", fontSize: '13px' };
+const btnStyle = { padding: "8px 20px", background: "#AD3A3C", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontWeight: "bold", marginLeft: 'auto' };
+const emptyState = { textAlign: "center", padding: "50px", color: "#888", fontStyle: "italic", background: "#fff", border: "1px dashed #ccc", marginTop: "20px" };
 const thStyle = { background: "#AD3A3C", color: "white", padding: "8px", border: "1px solid #ddd", fontSize: "13px" };
-const tdStyle = { padding: "5px", border: "1px solid #ddd", height: "65px", verticalAlign: "middle", width: "9.5%", transition:"background 0.2s" };
+const tdStyle = { padding: "5px", border: "1px solid #ddd", height: "65px", verticalAlign: "middle", width: "9.5%", transition: "background 0.2s" };
 const legendDot = { width: "10px", height: "10px", borderRadius: "50%", display: "inline-block", border: "1px solid #ccc" };
 
 // Modal Styles
@@ -401,5 +498,7 @@ const modalOverlay = { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, 
 const modalContent = { backgroundColor: "white", padding: "20px", borderRadius: "8px", width: "500px", maxWidth: "90%", boxShadow: "0 4px 10px rgba(0,0,0,0.2)" };
 const modalTh = { textAlign: "left", padding: "10px", borderBottom: "2px solid #ddd", color: "#555" };
 const modalTd = { padding: "10px", borderBottom: "1px solid #eee" };
+const dropdownListStyle = { position: "absolute", width: "100%", background: "white", border: "1px solid #ccc", maxHeight: "200px", overflowY: "auto", zIndex: 100, listStyle: "none", padding: 0, margin: "4px 0 0", borderRadius: "4px" };
+const dropdownItemStyle = { padding: "8px 12px", cursor: "pointer" };
 
 export default ViewTimeTable;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect,useRef } from "react";
 import api from "../utils/api";
 
 const FacultyTimetableViewer = () => {
@@ -7,6 +7,9 @@ const FacultyTimetableViewer = () => {
     const [selectedSemester, setSelectedSemester] = useState("1"); // New State
     const [scheduleData, setScheduleData] = useState({});
     const [loading, setLoading] = useState(false);
+    const [facultySearch, setFacultySearch] = useState("");
+    const [facultyOpen, setFacultyOpen] = useState(false);
+    const facultyRef = useRef(null);
 
     // 1. Fetch Faculty List
     useEffect(() => {
@@ -14,6 +17,14 @@ const FacultyTimetableViewer = () => {
             .then(res => setFacultyList(res.data))
             .catch(err => console.error("Error fetching faculty:", err));
     }, []);
+    useEffect(() => {
+        const close = (e) => {
+            if (facultyRef.current && !facultyRef.current.contains(e.target)) setFacultyOpen(false);
+        };
+        document.addEventListener("mousedown", close);
+        return () => document.removeEventListener("mousedown", close);
+    }, []);
+
 
     // 2. Fetch Schedule
     useEffect(() => {
@@ -35,6 +46,7 @@ const FacultyTimetableViewer = () => {
             .finally(() => setLoading(false));
     }, [selectedFaculty]);
 
+    
     // --- HELPER: Find Slot Data ---
     const findSlotData = (day, slotNum) => {
         // scheduleData structure: { "CSE 2023 (A)": [ {day, slot, semester...} ] }
@@ -60,18 +72,27 @@ const FacultyTimetableViewer = () => {
             <div style={filterContainer}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                     <label style={labelStyle}>Select Faculty:</label>
-                    <select
-                        style={selectStyle}
-                        value={selectedFaculty}
-                        onChange={(e) => setSelectedFaculty(e.target.value)}
-                    >
-                        <option value="">-- Choose Faculty --</option>
-                        {facultyList.map(f => (
-                            <option key={f.profile_id} value={f.profile_id}>
-                                {f.faculty_name} ({f.dept_code})
-                            </option>
-                        ))}
-                    </select>
+                    <div style={{ position: "relative" }} ref={facultyRef}>
+                        <input
+                            type="text"
+                            value={facultySearch}
+                            onChange={(e) => { setFacultySearch(e.target.value); setFacultyOpen(true); }}
+                            onFocus={() => setFacultyOpen(true)}
+                            placeholder={facultyList.find(f => f.profile_id == selectedFaculty) ? `${facultyList.find(f => f.profile_id == selectedFaculty).faculty_name} (${facultyList.find(f => f.profile_id == selectedFaculty).dept_code})` : "-- Choose Faculty --"}
+                            style={selectStyle}
+                        />
+                        {facultyOpen && (
+                            <ul style={dropdownListStyle}>
+                                {facultyList
+                                    .filter(f => `${f.faculty_name} (${f.dept_code})`.toLowerCase().includes(facultySearch.toLowerCase()))
+                                    .map(f => (
+                                        <li key={f.profile_id} style={dropdownItemStyle} onClick={() => { setSelectedFaculty(f.profile_id); setFacultySearch(""); setFacultyOpen(false); }}>
+                                            {f.faculty_name} ({f.dept_code})
+                                        </li>
+                                    ))}
+                            </ul>
+                        )}
+                    </div>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
@@ -180,5 +201,7 @@ const emptyState = { textAlign: "center", padding: "60px", color: "#999", fontSt
 const thStyle = { background: "#AD3A3C", color: "white", padding: "12px", border: "1px solid #e0e0e0", fontSize: "14px", fontWeight: '600' };
 const tdStyle = { padding: "8px", border: "1px solid #eee", height: "90px", verticalAlign: "middle", width: "10%", fontSize: '13px' };
 const activeTdStyle = { ...tdStyle, background: '#fff', border: '1px solid #ccc' };
+const dropdownListStyle = { position: "absolute", width: "100%", background: "white", border: "1px solid #ccc", maxHeight: "200px", overflowY: "auto", zIndex: 100, listStyle: "none", padding: 0, margin: "4px 0 0", borderRadius: "4px" };
+const dropdownItemStyle = { padding: "8px 12px", cursor: "pointer" };
 
 export default FacultyTimetableViewer;

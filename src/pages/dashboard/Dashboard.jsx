@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import api from "../utils/api"; 
+import React, { useState, useEffect, useRef } from "react";
+import api from "../utils/api";
 import "./Dashboard.css";
 
 export default function MonthlyAttendanceDashboard() {
@@ -14,19 +14,38 @@ export default function MonthlyAttendanceDashboard() {
   const [sectionId, setSectionId] = useState("");
   const [semester, setSemester] = useState("");
   const [courseCode, setCourseCode] = useState("");
-  
+
   const today = new Date();
   const defaultMonth = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
   const [month, setMonth] = useState(defaultMonth);
 
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [deptSearch, setDeptSearch] = useState("");
+  const [deptOpen, setDeptOpen] = useState(false);
+  const deptRef = useRef(null);
+
+  const [batchSearch, setBatchSearch] = useState("");
+  const [batchOpen, setBatchOpen] = useState(false);
+  const batchRef = useRef(null);
+
+  const [sectionSearch, setSectionSearch] = useState("");
+  const [sectionOpen, setSectionOpen] = useState(false);
+  const sectionRef = useRef(null);
+
+  const [semesterSearch, setSemesterSearch] = useState("");
+  const [semesterOpen, setSemesterOpen] = useState(false);
+  const semesterRef = useRef(null);
+
+  const [courseSearch, setCourseSearch] = useState("");
+  const [courseOpen, setCourseOpen] = useState(false);
+  const courseRef = useRef(null);
 
   // ... (All useEffects remain the same) ...
   useEffect(() => { api.get("/admin/depts").then(res => setDepts(res.data)).catch(console.error); }, []);
   useEffect(() => { if (!deptId) { setBatches([]); return; } api.get("/admin/batches").then(res => setBatches(res.data.filter(b => b.dept_id === +deptId))).catch(console.error); }, [deptId]);
   useEffect(() => { if (!batchId) { setSections([]); return; } api.get("/admin/sections").then(res => setSections(res.data.filter(s => s.batch_id === +batchId))).catch(console.error); }, [batchId]);
-  useEffect(() => { 
+  useEffect(() => {
     if (!sectionId || !semester) { setCourses([]); return; }
     api.get("/common/timetable", { params: { section_id: sectionId, semester } }).then(res => {
       const unique = []; const seen = new Set();
@@ -34,6 +53,18 @@ export default function MonthlyAttendanceDashboard() {
       setCourses(unique);
     });
   }, [sectionId, semester]);
+
+  useEffect(() => {
+    const close = (e) => {
+      if (deptRef.current && !deptRef.current.contains(e.target)) setDeptOpen(false);
+      if (batchRef.current && !batchRef.current.contains(e.target)) setBatchOpen(false);
+      if (sectionRef.current && !sectionRef.current.contains(e.target)) setSectionOpen(false);
+      if (semesterRef.current && !semesterRef.current.contains(e.target)) setSemesterOpen(false);
+      if (courseRef.current && !courseRef.current.contains(e.target)) setCourseOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, []);
 
   const fetchAttendance = async () => {
     if (!sectionId || !semester || !courseCode || !month) { alert("Please select all filters."); return; }
@@ -51,9 +82,9 @@ export default function MonthlyAttendanceDashboard() {
   };
 
   const getColor = (pct) => {
-    if (pct < 75) return '#f8d7da'; 
-    if (pct < 85) return '#fff3cd'; 
-    return '#d4edda'; 
+    if (pct < 75) return '#f8d7da';
+    if (pct < 85) return '#fff3cd';
+    return '#d4edda';
   };
 
   // --- NEW: CSV DOWNLOAD FUNCTION ---
@@ -63,7 +94,7 @@ export default function MonthlyAttendanceDashboard() {
     // 1. Create Headers
     // Static Headers
     const headers = ['Student Name'];
-    
+
     // Dynamic Date Headers from the first record
     data[0].records.forEach(rec => {
       headers.push(`${rec.date} (Slot ${rec.slot})`);
@@ -99,7 +130,7 @@ export default function MonthlyAttendanceDashboard() {
     const csvContent = [headers.join(','), ...rows].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    
+
     const link = document.createElement('a');
     link.href = url;
     link.setAttribute('download', `Attendance_${courseCode}_${month}.csv`);
@@ -114,45 +145,134 @@ export default function MonthlyAttendanceDashboard() {
   return (
     <div className="monthly-attendance">
 
-      {/* --- FILTERS BAR --- */}
       <div className="filters">
-        <select onChange={e => setDeptId(e.target.value)} value={deptId}>
-          <option value="">Select Dept</option>
-          {depts.map(d => <option key={d.id} value={d.id}>{d.dept_code}</option>)}
-        </select>
-        <select onChange={e => setBatchId(e.target.value)} value={batchId} disabled={!deptId}>
-          <option value="">Select Batch</option>
-          {batches.map(b => <option key={b.id} value={b.id}>{b.batch_name}</option>)}
-        </select>
-        <select onChange={e => setSectionId(e.target.value)} value={sectionId} disabled={!batchId}>
-          <option value="">Select Section</option>
-          {sections.map(s => <option key={s.id} value={s.id}>{s.section_name}</option>)}
-        </select>
-        <select onChange={e => setSemester(e.target.value)} value={semester}>
-          <option value="">Select Sem</option>
-          {[1,2,3,4,5,6,7,8].map(n => <option key={n} value={n}>Sem {n}</option>)}
-        </select>
-        <select onChange={e => setCourseCode(e.target.value)} value={courseCode} disabled={!semester}>
-          <option value="">Select Course</option>
-          {courses.map(c => <option key={c.course_code} value={c.course_code}>{c.course_name}</option>)}
-        </select>
+
+        {/* Dept */}
+        <div style={{ position: "relative" }} ref={deptRef}>
+          <input
+            type="text"
+            value={deptSearch}
+            onChange={(e) => { setDeptSearch(e.target.value); setDeptOpen(true); }}
+            onFocus={() => setDeptOpen(true)}
+            placeholder={depts.find(d => d.id == deptId)?.dept_code || "Select Dept"}
+            style={selectStyle}
+          />
+          {deptOpen && (
+            <ul style={dropdownListStyle}>
+              {depts.filter(d => d.dept_code.toLowerCase().includes(deptSearch.toLowerCase())).map(d => (
+                <li key={d.id} style={dropdownItemStyle} onClick={() => { setDeptId(d.id); setDeptSearch(""); setDeptOpen(false); setBatchId(""); setSectionId(""); }}>
+                  {d.dept_code}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Batch */}
+        <div style={{ position: "relative" }} ref={batchRef}>
+          <input
+            type="text"
+            value={batchSearch}
+            onChange={(e) => { setBatchSearch(e.target.value); setBatchOpen(true); }}
+            onFocus={() => setBatchOpen(true)}
+            placeholder={batches.find(b => b.id == batchId)?.batch_name || "Select Batch"}
+            disabled={!deptId}
+            style={{ ...selectStyle, background: !deptId ? "#eee" : "white", cursor: !deptId ? "not-allowed" : "text" }}
+          />
+          {batchOpen && deptId && (
+            <ul style={dropdownListStyle}>
+              {batches.filter(b => b.batch_name.toLowerCase().includes(batchSearch.toLowerCase())).map(b => (
+                <li key={b.id} style={dropdownItemStyle} onClick={() => { setBatchId(b.id); setBatchSearch(""); setBatchOpen(false); setSectionId(""); }}>
+                  {b.batch_name}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Section */}
+        <div style={{ position: "relative" }} ref={sectionRef}>
+          <input
+            type="text"
+            value={sectionSearch}
+            onChange={(e) => { setSectionSearch(e.target.value); setSectionOpen(true); }}
+            onFocus={() => setSectionOpen(true)}
+            placeholder={sections.find(s => s.id == sectionId)?.section_name || "Select Section"}
+            disabled={!batchId}
+            style={{ ...selectStyle, background: !batchId ? "#eee" : "white", cursor: !batchId ? "not-allowed" : "text" }}
+          />
+          {sectionOpen && batchId && (
+            <ul style={dropdownListStyle}>
+              {sections.filter(s => s.section_name.toLowerCase().includes(sectionSearch.toLowerCase())).map(s => (
+                <li key={s.id} style={dropdownItemStyle} onClick={() => { setSectionId(s.id); setSectionSearch(""); setSectionOpen(false); }}>
+                  {s.section_name}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Semester */}
+        <div style={{ position: "relative" }} ref={semesterRef}>
+          <input
+            type="text"
+            value={semesterSearch}
+            onChange={(e) => { setSemesterSearch(e.target.value); setSemesterOpen(true); }}
+            onFocus={() => setSemesterOpen(true)}
+            placeholder={semester ? `Sem ${semester}` : "Select Sem"}
+            style={selectStyle}
+          />
+          {semesterOpen && (
+            <ul style={dropdownListStyle}>
+              {[1, 2, 3, 4, 5, 6, 7, 8].filter(n => `Sem ${n}`.toLowerCase().includes(semesterSearch.toLowerCase())).map(n => (
+                <li key={n} style={dropdownItemStyle} onClick={() => { setSemester(n); setSemesterSearch(""); setSemesterOpen(false); }}>
+                  Sem {n}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Course */}
+        <div style={{ position: "relative" }} ref={courseRef}>
+          <input
+            type="text"
+            value={courseSearch}
+            onChange={(e) => { setCourseSearch(e.target.value); setCourseOpen(true); }}
+            onFocus={() => setCourseOpen(true)}
+            placeholder={courses.find(c => c.course_code == courseCode)?.course_name || "Select Course"}
+            disabled={!semester}
+            style={{ ...selectStyle, background: !semester ? "#eee" : "white", cursor: !semester ? "not-allowed" : "text" }}
+          />
+          {courseOpen && semester && (
+            <ul style={dropdownListStyle}>
+              {courses.filter(c => c.course_name.toLowerCase().includes(courseSearch.toLowerCase())).map(c => (
+                <li key={c.course_code} style={dropdownItemStyle} onClick={() => { setCourseCode(c.course_code); setCourseSearch(""); setCourseOpen(false); }}>
+                  {c.course_name}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Month left as it is */}
         <input type="month" value={month} onChange={e => setMonth(e.target.value)} max={defaultMonth} />
-        
+
         {/* Buttons Group */}
-        <div style={{marginLeft: 'auto', display: 'flex', gap: '10px'}}>
-            <button className="fetch-btn" onClick={downloadCSV} disabled={data.length === 0}>
-                Export CSV
-            </button>
-            <button className="fetch-btn" onClick={fetchAttendance}>
-                {loading ? 'Fetching...' : 'Get Report'}
-            </button>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: '10px' }}>
+          <button className="fetch-btn" onClick={downloadCSV} disabled={data.length === 0}>
+            Export CSV
+          </button>
+          <button className="fetch-btn" onClick={fetchAttendance}>
+            {loading ? 'Fetching...' : 'Get Report'}
+          </button>
         </div>
       </div>
 
-      {loading && <div style={{textAlign:'center', padding:'20px'}}>Loading Attendance Data...</div>}
+      {loading && <div style={{ textAlign: 'center', padding: '20px' }}>Loading Attendance Data...</div>}
 
       {/* ... (Rest of Legend, Header, and Table Rows remain exactly the same as previous code) ... */}
-      
+
       {/* LEGEND */}
       {!loading && data.length > 0 && (
         <div className="legend-container top-legend">
@@ -207,18 +327,18 @@ export default function MonthlyAttendanceDashboard() {
             ))}
           </div>
           <div className="attendance-summary">
-             {student.monthlySummary.attended}/{student.monthlySummary.total}
-             <br/><small>{student.monthlySummary.percentage}%</small>
+            {student.monthlySummary.attended}/{student.monthlySummary.total}
+            <br /><small>{student.monthlySummary.percentage}%</small>
           </div>
           <div className="attendance-summary total-col">
-             {student.totalAttended}/{student.totalClasses}
+            {student.totalAttended}/{student.totalClasses}
           </div>
           <div className="attendance-summary total-col" style={{ backgroundColor: getColor(student.overallPercentage), fontWeight: 'bold' }}>
-             {student.overallPercentage}%
+            {student.overallPercentage}%
           </div>
         </div>
       ))}
-      
+
       {!loading && data.length === 0 && (
         <div style={{ textAlign: 'center', padding: '40px', color: '#666', background: 'white', borderRadius: '8px' }}>
           No data available. Please select filters and click "Get Report".
@@ -227,4 +347,9 @@ export default function MonthlyAttendanceDashboard() {
 
     </div>
   );
+
 }
+
+const dropdownListStyle = { position: "absolute", width: "100%", background: "white", border: "1px solid #ccc", maxHeight: "200px", overflowY: "auto", zIndex: 100, listStyle: "none", padding: 0, margin: "4px 0 0", borderRadius: "4px" };
+const dropdownItemStyle = { padding: "8px 12px", cursor: "pointer" };
+const selectStyle = { padding: "8px", borderRadius: "4px", border: "1px solid #ccc", minWidth: "100px", fontSize: '13px' };

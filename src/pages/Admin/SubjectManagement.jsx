@@ -1,16 +1,18 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import api from "../utils/api";
 
 const SubjectManagement = () => {
   // Data States
   const [courses, setCourses] = useState([]);
   const [depts, setDepts] = useState([]);
-  
+
   // UI States
   const [filterDept, setFilterDept] = useState(""); // For filtering the table
   const [loading, setLoading] = useState(false);
-
+  const [deptSearch2, setDeptSearch2] = useState("");
+  const [deptOpen2, setDeptOpen2] = useState(false);
+  const deptDropdownRef2 = useRef(null);
   // Form State
   const [formData, setFormData] = useState({
     code: "",
@@ -23,7 +25,13 @@ const SubjectManagement = () => {
   useEffect(() => {
     fetchData();
   }, []);
-
+  useEffect(() => {
+    const close = (e) => {
+      if (deptDropdownRef2.current && !deptDropdownRef2.current.contains(e.target)) setDeptOpen2(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, []);
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -69,8 +77,8 @@ const SubjectManagement = () => {
   const getDeptCode = (id) => depts.find(d => d.id === id)?.dept_code || "-";
 
   // Filter Logic
-  const filteredCourses = filterDept 
-    ? courses.filter(c => c.dept_id === parseInt(filterDept)) 
+  const filteredCourses = filterDept
+    ? courses.filter(c => c.dept_id === parseInt(filterDept))
     : courses;
 
   return (
@@ -79,52 +87,69 @@ const SubjectManagement = () => {
       <div style={formContainer}>
         <h3 style={{ marginTop: 0, color: "#AD3A3C" }}>Add New Course</h3>
         <form onSubmit={handleSubmit} style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "flex-end" }}>
-          
+
           <div style={{ flex: 1, minWidth: "150px" }}>
             <label style={labelStyle}>Course Code (Unique)</label>
-            <input 
-                style={inputStyle} 
-                placeholder="e.g. CSE101" 
-                value={formData.code} 
-                onChange={e => setFormData({ ...formData, code: e.target.value })} 
-                required 
+            <input
+              style={inputStyle}
+              placeholder="e.g. CSE101"
+              value={formData.code}
+              onChange={e => setFormData({ ...formData, code: e.target.value })}
+              required
             />
           </div>
 
           <div style={{ flex: 2, minWidth: "200px" }}>
             <label style={labelStyle}>Course Name</label>
-            <input 
-                style={inputStyle} 
-                placeholder="e.g. Data Structures" 
-                value={formData.name} 
-                onChange={e => setFormData({ ...formData, name: e.target.value })} 
-                required 
+            <input
+              style={inputStyle}
+              placeholder="e.g. Data Structures"
+              value={formData.name}
+              onChange={e => setFormData({ ...formData, name: e.target.value })}
+              required
             />
           </div>
 
           <div style={{ flex: 1, minWidth: "100px" }}>
             <label style={labelStyle}>Credits</label>
-            <input 
-                type="number" 
-                style={inputStyle} 
-                placeholder="e.g. 3" 
-                value={formData.credits} 
-                onChange={e => setFormData({ ...formData, credits: e.target.value })} 
-                required 
+            <input
+              type="number"
+              style={inputStyle}
+              placeholder="e.g. 3"
+              value={formData.credits}
+              onChange={e => setFormData({ ...formData, credits: e.target.value })}
+              required
             />
           </div>
 
           <div style={{ flex: 1, minWidth: "150px" }}>
             <label style={labelStyle}>Department</label>
-            <select 
-                style={inputStyle} 
-                value={formData.dept_id} 
-                onChange={e => setFormData({ ...formData, dept_id: e.target.value })} 
-                required
-            >
-              <option value="">Select Dept</option>
-              {depts.map(d => <option key={d.id} value={d.id}>{d.dept_code}</option>)}
-            </select>
+            <div style={{ position: "relative" }} ref={deptDropdownRef2}>
+              <input
+                type="text"
+                value={deptSearch2}
+                onChange={(e) => { setDeptSearch2(e.target.value); setDeptOpen2(true); }}
+                onFocus={() => setDeptOpen2(true)}
+                placeholder={depts.find((d) => d.id == formData.dept_id)?.dept_code || "Select Dept"}
+                style={inputStyle}
+              />
+
+              {deptOpen2 && (
+                <ul style={{ position: "absolute", width: "100%", background: "white", border: "1px solid #ccc", maxHeight: "200px", overflowY: "auto", zIndex: 100, listStyle: "none", padding: 0, margin: "4px 0 0" }}>
+                  {depts
+                    .filter((d) => d.dept_code.toLowerCase().includes(deptSearch2.toLowerCase()))
+                    .map((d) => (
+                      <li
+                        key={d.id}
+                        onClick={() => { setFormData({ ...formData, dept_id: d.id }); setDeptSearch2(""); setDeptOpen2(false); }}
+                        style={{ padding: "8px 12px", cursor: "pointer" }}
+                      >
+                        {d.dept_code}
+                      </li>
+                    ))}
+                </ul>
+              )}
+            </div>
           </div>
 
           <button type="submit" style={primaryBtn}>+ Add Course</button>
@@ -134,15 +159,15 @@ const SubjectManagement = () => {
       {/* 2. FILTER & LIST */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
         <h3>Existing Courses</h3>
-        
+
         {/* Filter Dropdown */}
-        <select 
-            style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
-            value={filterDept}
-            onChange={e => setFilterDept(e.target.value)}
+        <select
+          style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
+          value={filterDept}
+          onChange={e => setFilterDept(e.target.value)}
         >
-            <option value="">All Departments</option>
-            {depts.map(d => <option key={d.id} value={d.id}>{d.dept_name}</option>)}
+          <option value="">All Departments</option>
+          {depts.map(d => <option key={d.id} value={d.id}>{d.dept_name}</option>)}
         </select>
       </div>
 
@@ -185,27 +210,27 @@ const SubjectManagement = () => {
 /* ================= STYLES ================= */
 
 const formContainer = {
-    backgroundColor: "#f9f9f9",
-    padding: "20px",
-    borderRadius: "8px",
-    marginBottom: "30px",
-    border: "1px solid #eee"
+  backgroundColor: "#f9f9f9",
+  padding: "20px",
+  borderRadius: "8px",
+  marginBottom: "30px",
+  border: "1px solid #eee"
 };
 
 const labelStyle = {
-    display: "block",
-    fontSize: "12px",
-    fontWeight: "bold",
-    marginBottom: "5px",
-    color: "#555"
+  display: "block",
+  fontSize: "12px",
+  fontWeight: "bold",
+  marginBottom: "5px",
+  color: "#555"
 };
 
 const inputStyle = {
-    width: "100%",
-    padding: "8px",
-    border: "1px solid #ccc",
-    borderRadius: "4px",
-    boxSizing: "border-box"
+  width: "100%",
+  padding: "8px",
+  border: "1px solid #ccc",
+  borderRadius: "4px",
+  boxSizing: "border-box"
 };
 
 const primaryBtn = {

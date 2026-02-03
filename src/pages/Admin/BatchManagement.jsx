@@ -1,12 +1,15 @@
 
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef  } from "react";
 import api from "../utils/api";
 
 const BatchManagement = () => {
   const [batches, setBatches] = useState([]);
   const [depts, setDepts] = useState([]);
-  
+  const [deptSearch, setDeptSearch] = useState("");
+  const [deptOpen, setDeptOpen] = useState(false);
+  const deptDropdownRef = useRef(null);
+
   // Form State
   const [formData, setFormData] = useState({
     dept_id: "",
@@ -36,6 +39,12 @@ const BatchManagement = () => {
     fetchData();
   }, []);
 
+  useEffect(() => {
+  const close = (e) => { if (deptDropdownRef.current && !deptDropdownRef.current.contains(e.target)) setDeptOpen(false); };
+  document.addEventListener("mousedown", close);
+  return () => document.removeEventListener("mousedown", close);
+}, []);
+
   // 2. Handle Form Submit (Create OR Update)
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -43,10 +52,10 @@ const BatchManagement = () => {
       if (editId) {
         // --- UPDATE MODE ---
         await api.put(`/admin/batches/${editId}`, {
-            start_year: formData.start_year,
-            end_year: formData.end_year,
-            batch_name: formData.batch_name
-            // Note: Your backend PUT API does not update dept_id, so we only send the others
+          start_year: formData.start_year,
+          end_year: formData.end_year,
+          batch_name: formData.batch_name
+          // Note: Your backend PUT API does not update dept_id, so we only send the others
         });
         alert("Batch Updated Successfully!");
       } else {
@@ -88,7 +97,7 @@ const BatchManagement = () => {
   // 5. Handle Delete
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure? This might fail if the batch has sections attached.")) return;
-    
+
     try {
       await api.delete(`/admin/batches/${id}`);
       alert("Batch Deleted");
@@ -102,69 +111,84 @@ const BatchManagement = () => {
   return (
     <div>
       <h3>{editId ? "Edit Batch" : "Add New Batch"}</h3>
-      
+
       <form onSubmit={handleSubmit} style={{ ...formStyle, flexWrap: "wrap", alignItems: "flex-end" }}>
-        
+
         {/* Department (Disabled in Edit Mode because backend doesn't support moving batches between depts in PUT) */}
-        <div style={{flex: "1 0 150px"}}>
-            <label style={labelStyle}>Department</label>
-            <select
-            style={{...inputStyle, width: "100%", background: editId ? "#eee" : "white"}}
-            value={formData.dept_id}
-            onChange={(e) => setFormData({ ...formData, dept_id: e.target.value })}
-            required
-            disabled={!!editId} 
-            >
-            <option value="">Select Dept</option>
-            {depts.map((d) => (
-                <option key={d.id} value={d.id}>{d.dept_code}</option>
-            ))}
-            </select>
+        <div style={{ flex: "1 0 150px" }}>
+          <label style={labelStyle}>Department</label>
+          <div style={{ position: "relative", width: "100%" }} ref={deptDropdownRef}>
+            <input
+              type="text"
+              value={deptSearch}
+              onChange={(e) => { setDeptSearch(e.target.value); setDeptOpen(true); }}
+              onFocus={() => setDeptOpen(true)}
+              placeholder={depts.find((d) => d.id == formData.dept_id)?.dept_code || "Select Dept"}
+              disabled={!!editId}
+              style={{ ...inputStyle, width: "100%", background: editId ? "#eee" : "white" }}
+            />
+
+            {deptOpen && !editId && (
+              <ul style={{ position: "absolute", width: "100%", background: "white", border: "1px solid #ccc", maxHeight: "200px", overflowY: "auto", zIndex: 100, listStyle: "none", padding: 0, margin: "4px 0 0" }}>
+                {depts
+                  .filter((d) => d.dept_code.toLowerCase().includes(deptSearch.toLowerCase()))
+                  .map((d) => (
+                    <li
+                      key={d.id}
+                      onClick={() => { setFormData({ ...formData, dept_id: d.id }); setDeptSearch(""); setDeptOpen(false); }}
+                      style={{ padding: "8px 12px", cursor: "pointer" }}
+                    >
+                      {d.dept_code}
+                    </li>
+                  ))}
+              </ul>
+            )}
+          </div>
         </div>
 
-        <div style={{flex: "1 0 100px"}}>
-            <label style={labelStyle}>Start Year</label>
-            <input
+        <div style={{ flex: "1 0 100px" }}>
+          <label style={labelStyle}>Start Year</label>
+          <input
             type="number"
-            style={{...inputStyle, width: "100%"}}
+            style={{ ...inputStyle, width: "100%" }}
             value={formData.start_year}
             onChange={(e) => setFormData({ ...formData, start_year: e.target.value })}
             required
-            />
+          />
         </div>
 
-        <div style={{flex: "1 0 100px"}}>
-            <label style={labelStyle}>End Year</label>
-            <input
+        <div style={{ flex: "1 0 100px" }}>
+          <label style={labelStyle}>End Year</label>
+          <input
             type="number"
-            style={{...inputStyle, width: "100%"}}
+            style={{ ...inputStyle, width: "100%" }}
             value={formData.end_year}
             onChange={(e) => setFormData({ ...formData, end_year: e.target.value })}
             required
-            />
+          />
         </div>
 
-        <div style={{flex: "1 0 150px"}}>
-            <label style={labelStyle}>Batch Name</label>
-            <input
-            style={{...inputStyle, width: "100%"}}
+        <div style={{ flex: "1 0 150px" }}>
+          <label style={labelStyle}>Batch Name</label>
+          <input
+            style={{ ...inputStyle, width: "100%" }}
             placeholder="e.g. 2023-2027"
             value={formData.batch_name}
             onChange={(e) => setFormData({ ...formData, batch_name: e.target.value })}
             required
-            />
+          />
         </div>
 
-        <div style={{display:'flex', gap:'5px'}}>
-            <button type="submit" style={editId ? updateBtn : primaryBtn}>
-                {editId ? "Update Batch" : "Add Batch"}
+        <div style={{ display: 'flex', gap: '5px' }}>
+          <button type="submit" style={editId ? updateBtn : primaryBtn}>
+            {editId ? "Update Batch" : "Add Batch"}
+          </button>
+
+          {editId && (
+            <button type="button" onClick={handleCancel} style={cancelBtn}>
+              Cancel
             </button>
-            
-            {editId && (
-                <button type="button" onClick={handleCancel} style={cancelBtn}>
-                    Cancel
-                </button>
-            )}
+          )}
         </div>
       </form>
 
