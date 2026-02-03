@@ -12,6 +12,7 @@ import AttendanceOverview from "./AttendanceOverview";
 import AttendanceShortage from "./AttendanceShortage";
 import Dashboard from "../dashboard/Dashboard";
 import Reports from "./Reports";
+import PasswordReset from "./PasswordReset";
 
 const AdminDashboard = () => {
   const [activeSection, setActiveSection] = useState("dashboard");
@@ -123,6 +124,7 @@ const AdminDashboard = () => {
           <button style={navBtn(activeSection === "attendance")} onClick={() => setActiveSection("attendance")}>Attendance Overview</button>
           <button style={navBtn(activeSection === "shortage")} onClick={() => setActiveSection("shortage")}>Shortage List</button>
           <button style={navBtn(activeSection === "reports")} onClick={() => setActiveSection("reports")}>Reports</button>
+          <button style={navBtn(activeSection === "password_reset")} onClick={() => setActiveSection("password_reset")}>Password Reset</button>
         </nav>
         {role === 'faculty' && (
           <>
@@ -239,6 +241,7 @@ const getSectionTitle = (key) => {
     case "attendance": return "Attendance Overview";
     case "reports": return "Reports";
     case "shortage": return "Attendance Shortage (<75%)";
+    case "password_reset": return "Password Reset";
     default: return "";
   }
 };
@@ -258,6 +261,7 @@ const renderSection = (key) => {
     case "attendance": return <AttendanceOverview />;
     case "reports": return <Reports />;
     case "shortage": return <AttendanceShortage />;
+    case "password_reset": return <PasswordReset/>;
     default: return null;
   }
 };
