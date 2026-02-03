@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import api from "../utils/api";
+import api from "../utils";
 import SuccessPopup from "../../components/SuccessPop";
 
 const DepartmentManagement = () => {

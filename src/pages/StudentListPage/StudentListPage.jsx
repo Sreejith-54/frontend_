@@ -20,7 +20,7 @@ const StudentListPage = () => {
     const fetchDepts = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/depts`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/depts`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await response.json();
@@ -41,7 +41,7 @@ const StudentListPage = () => {
       }
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/batches`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/batches`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await response.json();
@@ -67,7 +67,7 @@ const StudentListPage = () => {
       }
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/sections`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/sections`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await response.json();
@@ -95,7 +95,7 @@ const StudentListPage = () => {
       try {
         const token = localStorage.getItem("token");
         const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/admin/students-by-filter?section_id=${selectedClass}`,
+          `${import.meta.env.VITE_API_URL}/admin/students-by-filter?section_id=${selectedClass}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const data = await response.json();

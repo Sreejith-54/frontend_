@@ -40,7 +40,7 @@ const AdminDashboard = () => {
     
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:3000/api/faculty/auth-key", {
+      const response = await fetch("http://localhost:3000/faculty/auth-key", {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -62,7 +62,7 @@ const AdminDashboard = () => {
     
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:3000/api/faculty/auth-key", {
+      const response = await fetch("http://localhost:3000/faculty/auth-key", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

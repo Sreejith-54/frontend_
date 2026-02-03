@@ -1,7 +1,7 @@
 
 
 import { useState, useEffect } from "react";
-import api from "../utils/api";
+import api from "../utils";
 
 const TimetableConfig = () => {
   // --- CONTEXT STATE ---

@@ -23,7 +23,7 @@ const StudentReport = (props) => {
             ...(endDate && { end_date: endDate })
         });
 
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/student-report?${params.toString()}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/student-report?${params.toString()}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 

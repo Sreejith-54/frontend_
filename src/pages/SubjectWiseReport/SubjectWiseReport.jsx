@@ -27,10 +27,10 @@ function SubjectWiseReport() {
     const headers = { Authorization: `Bearer ${token}` };
 
     Promise.all([
-      fetch(`${import.meta.env.VITE_API_URL}/api/admin/depts`, { headers }).then(res => res.json()),
-      fetch(`${import.meta.env.VITE_API_URL}/api/admin/batches`, { headers }).then(res => res.json()),
-      fetch(`${import.meta.env.VITE_API_URL}/api/admin/sections`, { headers }).then(res => res.json()),
-      fetch(`${import.meta.env.VITE_API_URL}/api/admin/courses`, { headers }).then(res => res.json())
+      fetch(`${import.meta.env.VITE_API_URL}/admin/depts`, { headers }).then(res => res.json()),
+      fetch(`${import.meta.env.VITE_API_URL}/admin/batches`, { headers }).then(res => res.json()),
+      fetch(`${import.meta.env.VITE_API_URL}/admin/sections`, { headers }).then(res => res.json()),
+      fetch(`${import.meta.env.VITE_API_URL}/admin/courses`, { headers }).then(res => res.json())
     ]).then(([deptsData, batchesData, sectionsData, coursesData]) => {
       setDepts(deptsData);
       setBatches(batchesData);
@@ -53,7 +53,7 @@ function SubjectWiseReport() {
         ...(endDate && { end_date: endDate })
       });
 
-      fetch(`${import.meta.env.VITE_API_URL}/api/admin/attendance-report?${params.toString()}`, {
+      fetch(`${import.meta.env.VITE_API_URL}/admin/attendance-report?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
         .then(res => res.json())
