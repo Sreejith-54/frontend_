@@ -13,7 +13,7 @@ const AttendanceShortage = () => {
   const [selectedBatch, setSelectedBatch] = useState("");
   const [selectedSection, setSelectedSection] = useState("");
   const [semester, setSemester] = useState("1");
-  const [selectedSubject, setSelectedSubject] = useState("ALL");
+  const [selectedSubject, setSelectedSubject] = useState("");
   const [threshold, setThreshold] = useState(75);
 
   // --- 3. Data States ---
@@ -65,7 +65,7 @@ const AttendanceShortage = () => {
                    }
                }
                setCourses(uniqueCourses);
-               setSelectedSubject("ALL");
+               setSelectedSubject(uniqueCourses[0].course_code);
            })
            .catch(err => {
                console.error("Failed to load class courses", err);
@@ -125,7 +125,6 @@ const AttendanceShortage = () => {
             </select>
 
             <select style={selectStyle} value={selectedSubject} onChange={(e) => setSelectedSubject(e.target.value)} disabled={courses.length === 0}>
-                <option value="ALL">All Subjects</option>
                 {courses.map((s) => (
                     <option key={s.course_code} value={s.course_code}>{s.course_name}</option>
                 ))}
