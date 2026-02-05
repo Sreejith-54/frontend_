@@ -124,7 +124,7 @@ const AdminDashboard = () => {
           <button style={navBtn(activeSection === "attendance")} onClick={() => setActiveSection("attendance")}>Attendance Overview</button>
           <button style={navBtn(activeSection === "shortage")} onClick={() => setActiveSection("shortage")}>Shortage List</button>
           <button style={navBtn(activeSection === "reports")} onClick={() => setActiveSection("reports")}>Reports</button>
-          <button style={navBtn(activeSection === "password_reset")} onClick={() => setActiveSection("password_reset")}>Password Reset</button>
+          {role === 'admin' &&<button style={navBtn(activeSection === "password_reset")} onClick={() => setActiveSection("password_reset")}>Password Reset</button>}
         </nav>
         {role === 'faculty' && (
           <>
