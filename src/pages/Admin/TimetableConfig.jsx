@@ -328,7 +328,7 @@ const TimetableConfig = () => {
               />
               {courseOpen && (
                 <ul style={dropdownListStyle}>
-                  {courses.filter(c => c.course_name.toLowerCase().includes(courseSearch.toLowerCase())).map(c => (
+                  {courses.filter(a=> a.dept_id == selectedDept).filter(c => c.course_name.toLowerCase().includes(courseSearch.toLowerCase())).map(c => (
                     <li key={c.course_code} style={dropdownItemStyle} onClick={() => { setFormData({...formData, course_code: c.course_code}); setCourseSearch(""); setCourseOpen(false); }}>
                       {c.course_name}
                     </li>
