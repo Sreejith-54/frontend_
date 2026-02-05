@@ -13,7 +13,7 @@ const FacultyTimetableViewer = () => {
 
     // 1. Fetch Faculty List
     useEffect(() => {
-        api.get("/admin/faculty")
+        api.get("/api/admin/faculty")
             .then(res => setFacultyList(res.data))
             .catch(err => console.error("Error fetching faculty:", err));
     }, []);
@@ -35,7 +35,7 @@ const FacultyTimetableViewer = () => {
 
         setLoading(true);
         // Pass the profile_id (selectedFaculty) to the backend
-        api.get(`/faculty/my-schedule?faculty_id=${selectedFaculty}`)
+        api.get(`/api/faculty/my-schedule?faculty_id=${selectedFaculty}`)
             .then(res => {
                 setScheduleData(res.data[0] || {});
             })

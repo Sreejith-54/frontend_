@@ -9,7 +9,7 @@ const DepartmentManagement = () => {
 
   const fetchDepts = async () => {
     try {
-      const res = await api.get("/admin/depts");
+      const res = await api.get("/api/admin/depts");
       setDepts(res.data);
     } catch (err) {
       alert("Failed to fetch departments");
@@ -23,7 +23,7 @@ const DepartmentManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await api.post("/admin/depts", formData);
+      await api.post("/api/admin/depts", formData);
       setFormData({ name: "", code: "" });
       fetchDepts();
       setShowPopup(true); 
@@ -35,7 +35,7 @@ const DepartmentManagement = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure?")) return;
     try {
-      await api.delete(`/admin/depts/${id}`);
+      await api.post(`/api/admin/delete/depts/${id}`);
       fetchDepts();
     } catch (err) {
       alert("Error deleting department");

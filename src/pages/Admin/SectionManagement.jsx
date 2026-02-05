@@ -18,8 +18,8 @@ const SectionManagement = () => {
   const fetchData = async () => {
     try {
       const [secRes, batchRes] = await Promise.all([
-        api.get("/admin/sections"),
-        api.get("/admin/batches")
+        api.get("/api/admin/sections"),
+        api.get("/api/admin/batches")
       ]);
       setSections(secRes.data);
       setBatches(batchRes.data);
@@ -41,30 +41,29 @@ const SectionManagement = () => {
   }, []);
 
   // 2. Handle Submit (Create or Update)
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (editId) {
-        // --- UPDATE MODE ---
-        await api.put(`/admin/sections/${editId}`, {
-          section_name: formData.section_name
-          // Backend API only accepts section_name for updates
-        });
-        alert("Section Updated!");
-      } else {
-        // --- CREATE MODE ---
-        await api.post("/admin/sections", formData);
-        alert("Section Added!");
-      }
-
-      // Reset Form
-      handleCancel();
-      fetchData();
-    } catch (err) {
-      console.error(err);
-      alert("Error: " + (err.response?.data?.error || err.message));
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    if (editId) {
+      // --- UPDATE MODE ---
+      await api.post(`/api/admin/edit/sections/${editId}`, {
+        section_name: formData.section_name
+      });
+      alert("Section Updated!");
+    } else {
+      // --- CREATE MODE ---
+      await api.post("/api/admin/sections", formData);
+      alert("Section Added!");
     }
-  };
+
+    // Reset Form
+    handleCancel();
+    fetchData();
+  } catch (err) {
+    console.error(err);
+    alert("Error: " + (err.response?.data?.error || err.message));
+  }
+};
 
   // 3. Handle Edit Click
   const handleEdit = (section) => {
@@ -87,7 +86,7 @@ const SectionManagement = () => {
     if (!window.confirm("Are you sure? This might fail if students or timetables are linked to this section.")) return;
 
     try {
-      await api.delete(`/admin/sections/${id}`);
+      await api.post(`/api/admin/delete/sections/${id}`);
       fetchData(); // Refresh list
     } catch (err) {
       console.error(err);

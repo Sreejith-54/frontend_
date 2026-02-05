@@ -28,7 +28,7 @@ const Login = () => {
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/login`,
+        `${import.meta.env.VITE_API_URL}/api/login`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -133,7 +133,7 @@ const Login = () => {
               textAlign: 'center',
             }}
           >
-            Login Page
+            Login In
           </h2>
 
           <form

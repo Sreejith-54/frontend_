@@ -41,7 +41,7 @@ const AdminDashboard = () => {
     
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:3000/faculty/auth-key", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/faculty/auth-key`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -63,8 +63,8 @@ const AdminDashboard = () => {
     
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:3000/faculty/auth-key", {
-        method: "PUT",
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/faculty/auth-key`, {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`

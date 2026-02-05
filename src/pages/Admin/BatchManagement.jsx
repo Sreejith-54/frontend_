@@ -25,8 +25,8 @@ const BatchManagement = () => {
   const fetchData = async () => {
     try {
       const [batchRes, deptRes] = await Promise.all([
-        api.get("/admin/batches"),
-        api.get("/admin/depts")
+        api.get("/api/admin/batches"),
+        api.get("/api/admin/depts")
       ]);
       setBatches(batchRes.data);
       setDepts(deptRes.data);
@@ -46,34 +46,33 @@ const BatchManagement = () => {
 }, []);
 
   // 2. Handle Form Submit (Create OR Update)
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (editId) {
-        // --- UPDATE MODE ---
-        await api.put(`/admin/batches/${editId}`, {
-          start_year: formData.start_year,
-          end_year: formData.end_year,
-          batch_name: formData.batch_name
-          // Note: Your backend PUT API does not update dept_id, so we only send the others
-        });
-        alert("Batch Updated Successfully!");
-      } else {
-        // --- CREATE MODE ---
-        await api.post("/admin/batches", formData);
-        alert("Batch Added Successfully!");
-      }
-
-      // Reset
-      setFormData({ dept_id: "", start_year: "", end_year: "", batch_name: "" });
-      setEditId(null);
-      fetchData();
-
-    } catch (err) {
-      console.error(err);
-      alert("Error: " + (err.response?.data?.error || err.message));
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    if (editId) {
+      // --- UPDATE MODE ---
+      await api.post(`/api/admin/edit/batches/${editId}`, {
+        start_year: formData.start_year,
+        end_year: formData.end_year,
+        batch_name: formData.batch_name
+      });
+      alert("Batch Updated Successfully!");
+    } else {
+      // --- CREATE MODE ---
+      await api.post("/api/admin/batches", formData);
+      alert("Batch Added Successfully!");
     }
-  };
+
+    // Reset
+    setFormData({ dept_id: "", start_year: "", end_year: "", batch_name: "" });
+    setEditId(null);
+    fetchData();
+
+  } catch (err) {
+    console.error(err);
+    alert("Error: " + (err.response?.data?.error || err.message));
+  }
+};
 
   // 3. Handle Edit Click
   const handleEdit = (batch) => {
@@ -99,7 +98,7 @@ const BatchManagement = () => {
     if (!window.confirm("Are you sure? This might fail if the batch has sections attached.")) return;
 
     try {
-      await api.delete(`/admin/batches/${id}`);
+      await api.post(`/api/admin/delete/batches/${id}`);
       alert("Batch Deleted");
       fetchData();
     } catch (err) {
@@ -114,7 +113,6 @@ const BatchManagement = () => {
 
       <form onSubmit={handleSubmit} style={{ ...formStyle, flexWrap: "wrap", alignItems: "flex-end" }}>
 
-        {/* Department (Disabled in Edit Mode because backend doesn't support moving batches between depts in PUT) */}
         <div style={{ flex: "1 0 150px" }}>
           <label style={labelStyle}>Department</label>
           <div style={{ position: "relative", width: "100%" }} ref={deptDropdownRef}>

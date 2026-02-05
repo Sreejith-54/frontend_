@@ -12,7 +12,7 @@ const PasswordReset = () => {
     }
     const handleSubmit = async(e) =>{
         try{
-            await api.post('/admin/reset-password',{
+            await api.post('/api/admin/reset-password',{
                 email: email,
                 newPassword: password
             });

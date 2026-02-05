@@ -81,11 +81,11 @@ const TimetableConfig = () => {
   useEffect(() => {
     const loadBasics = async () => {
       try {
-        const d = await api.get("/admin/depts");
+        const d = await api.get("/api/admin/depts");
         setDepts(d.data);
-        const c = await api.get("/admin/courses");
+        const c = await api.get("/api/admin/courses");
         setCourses(c.data);
-        const f = await api.get("/admin/faculty");
+        const f = await api.get("/api/admin/faculty");
         setFaculty(f.data);
       } catch(e) { console.error(e); }
     };
@@ -95,7 +95,7 @@ const TimetableConfig = () => {
   // 2. Cascade Dropdowns
   useEffect(() => {
     if (selectedDept) {
-      api.get("/admin/batches").then(res => {
+      api.get("/api/admin/batches").then(res => {
         setBatches(res.data.filter(b => b.dept_id === parseInt(selectedDept)));
       });
     } else setBatches([]);
@@ -103,7 +103,7 @@ const TimetableConfig = () => {
 
   useEffect(() => {
     if (selectedBatch) {
-      api.get("/admin/sections").then(res => {
+      api.get("/api/admin/sections").then(res => {
         setSections(res.data.filter(s => s.batch_id === parseInt(selectedBatch)));
       });
     } else setSections([]);
@@ -120,7 +120,7 @@ const TimetableConfig = () => {
 
   const fetchTimetable = async () => {
     try {
-      const res = await api.get(`/common/timetable-by-class?section_id=${selectedSection}&semester=${semester}`);
+      const res = await api.get(`/api/common/timetable-by-class?section_id=${selectedSection}&semester=${semester}`);
       setTimetable(res.data);
     } catch (e) { console.error(e); }
   };
@@ -141,7 +141,7 @@ const TimetableConfig = () => {
     };
 
     try {
-      await api.post("/admin/timetable", payload);
+      await api.post("/api/admin/timetable", payload);
       fetchTimetable();
       alert("Slot Added Successfully");
     } catch (e) {
@@ -152,7 +152,7 @@ const TimetableConfig = () => {
   const handleDelete = async (id) => {
     if(!window.confirm("Remove this slot?")) return;
     try {
-      await api.delete(`/admin/timetable/${id}`);
+      await api.post(`/api/admin/delete/timetable/${id}`);
       fetchTimetable();
     } catch(e) { alert("Error deleting slot"); }
   };

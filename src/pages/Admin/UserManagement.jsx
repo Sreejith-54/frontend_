@@ -8,7 +8,7 @@ const UserManagement = () => {
   return (
     <div>
       {/* 3-WAY TAB SWITCH */}
-      <div style={{ display: "flex", gap: "10px", marginBottom: "25px", borderBottom: "1px solid #ddd", paddingBottom:"10px" }}>
+      <div style={{ display: "flex", gap: "10px", marginBottom: "25px", borderBottom: "1px solid #ddd", paddingBottom: "10px" }}>
         <button style={tabBtn(activeTab === "directory")} onClick={() => setActiveTab("directory")}>
           1. Faculty Directory (Profiles)
         </button>
@@ -43,29 +43,31 @@ const FacultyDirectory = () => {
   const [uploading, setUploading] = useState(false);
   const [bulkDeptId, setBulkDeptId] = useState("");
   const [selectedDept, setSelectedDept] = useState(""); // For filtering the table
-  const [editId,setEditId] = useState("");
+  const [editId, setEditId] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+
 
   useEffect(() => { fetchData(); }, []);
 
-  const fetchData = async () => { 
-    try { 
+  const fetchData = async () => {
+    try {
       const [facRes, deptRes] = await Promise.all([
-          api.get("/admin/faculty"),
-          api.get("/admin/depts")
+        api.get("/api/admin/faculty"),
+        api.get("/api/admin/depts")
       ]);
-      setFacultyList(facRes.data); 
+      setFacultyList(facRes.data);
       setDepts(deptRes.data);
     } catch (e) { console.error(e); }
   };
 
-    const handleCancel = () => {
+  const handleCancel = () => {
     setEditId(null);
     setProfileForm({ name: "", email: "", dept_id: "", auth_key: "" });
   };
 
-  const handleDelete = async (id) => {    
+  const handleDelete = async (id) => {
     try {
-      await api.delete(`/admin/faculty/${id}`);
+      await api.post(`/api/admin/delete/faculty/${id}`);
       alert("Faculty Deleted");
       fetchData();
     } catch (err) {
@@ -74,12 +76,12 @@ const FacultyDirectory = () => {
     }
   };
 
-    const handleEdit = (faculty) => {
+  const handleEdit = (faculty) => {
     setEditId(faculty.profile_id);
     setProfileForm({
       name: faculty.faculty_name,
       dept_id: faculty.dept_id,
-      email:'',
+      email: '',
       auth_key: faculty.authorization_key
     });
     setShowForm(true);
@@ -89,45 +91,45 @@ const FacultyDirectory = () => {
   const handleCreateProfile = async (e) => {
     e.preventDefault();
     try {
-      if(editId){
-        await api.put(`/admin/faculty/${editId}`,{
+      if (editId) {
+        await api.post(`/api/admin/edit/faculty/${editId}`, {
           name: profileForm.name,
           dept_id: profileForm.dept_id,
           auth_key: profileForm.auth_key
         });
         alert('successfully updated');
 
-      }else{
-        await api.post("/admin/faculty-profile", profileForm);
+      } else {
+        await api.post("/api/admin/faculty-profile", profileForm);
         alert("Faculty Profile Added!");
       }
-        setShowForm(false);
-        setProfileForm({ name: "", email: "", dept_id: "", auth_key: "" });
-        fetchData();
+      setShowForm(false);
+      setProfileForm({ name: "", email: "", dept_id: "", auth_key: "" });
+      fetchData();
     } catch (e) { alert("Error: " + (e.response?.data?.error || e.message)); }
   };
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    
+
     const reader = new FileReader();
-    
+
     reader.onload = (evt) => {
       const data = new Uint8Array(evt.target.result);
       const workbook = XLSX.read(data, { type: 'array' });
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
       const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-      
+
       const formatted = jsonData.map(row => ({
         name: row.name || row.Name || "",
         email: row.email || row.Email || "",
         auth_key: row.auth_key || row.Auth_Key || row.auth_key || ""
       }));
-      
+
       setBulkData(formatted);
     };
-    
+
     reader.readAsArrayBuffer(file);
   };
 
@@ -143,7 +145,7 @@ const FacultyDirectory = () => {
     }
 
     setUploading(true);
-    
+
     try {
       const profilesWithDeptId = bulkData.map(faculty => ({
         name: faculty.name,
@@ -152,17 +154,17 @@ const FacultyDirectory = () => {
         auth_key: faculty.auth_key
       }));
 
-      await api.post("/admin/faculty-bulk-upload", {
+      await api.post("/api/admin/faculty-bulk-upload", {
         profiles: profilesWithDeptId
       });
 
       alert(`Success! ${bulkData.length} Faculty Profiles Created!`);
-      
+
       setShowBulkUpload(false);
       setBulkData([]);
       setBulkDeptId("");
       fetchData();
-      
+
     } catch (e) {
       alert("Error: " + (e.response?.data?.error || e.message));
     } finally {
@@ -176,40 +178,49 @@ const FacultyDirectory = () => {
       { name: "Dr Jane Smith", email: "jane@example.com", auth_key: "XYZ456" },
       { name: "Dr Robert Brown", email: "robert@example.com", auth_key: "DEF789" }
     ];
-    
+
     const ws = XLSX.utils.json_to_sheet(template);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Faculty Profiles");
     XLSX.writeFile(wb, "faculty_profiles_template.xlsx");
   };
 
-  // Filter faculty list based on selected department
-  const filteredFacultyList = selectedDept 
-    ? facultyList.filter(f => f.dept_id === parseInt(selectedDept))
-    : facultyList;
+  const filteredFacultyList = facultyList.filter(f => {
+    // Check department match
+    const matchesDept = selectedDept ? f.dept_id === parseInt(selectedDept) : true;
+
+    // Check search match
+    const matchesSearch = searchQuery === "" ||
+      f.faculty_name.toLowerCase().includes(searchQuery.toLowerCase());
+
+    // Return true only if BOTH conditions are met
+    return matchesDept && matchesSearch;
+  });
+
+
 
   return (
     <>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom:'20px' }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: '20px' }}>
         <div>
-          <h3 style={{margin:0}}>Faculty Directory</h3>
+          <h3 style={{ margin: 0 }}>Faculty Directory</h3>
         </div>
-        <div style={{display:'flex', gap:'10px'}}>
+        <div style={{ display: 'flex', gap: '10px' }}>
           <button style={primaryBtn} onClick={downloadTemplate}>Download Template</button>
-          <button style={primaryBtn} onClick={() => {setShowBulkUpload(!showBulkUpload); setShowForm(false); setEditId(false)}}>{showBulkUpload ? "Cancel" : "+ Upload Profiles"}</button>
-          <button style={primaryBtn} onClick={() => {setShowForm(!showForm); setShowBulkUpload(false); handleCancel()}}>{showForm ? "Cancel" : "+ Add Profile"}</button>
+          <button style={primaryBtn} onClick={() => { setShowBulkUpload(!showBulkUpload); setShowForm(false); setEditId(false) }}>{showBulkUpload ? "Cancel" : "+ Upload Profiles"}</button>
+          <button style={primaryBtn} onClick={() => { setShowForm(!showForm); setShowBulkUpload(false); handleCancel() }}>{showForm ? "Cancel" : "+ Add Profile"}</button>
         </div>
       </div>
 
       {showBulkUpload && (
-        <div style={{...formContainer, border:'2px solid #AD3A3C'}}>
-          <h4 style={{margin:'0 0 15px'}}>Upload Faculty Profiles</h4>
-          
-          <div style={{marginBottom:'15px'}}>
+        <div style={{ ...formContainer, border: '2px solid #AD3A3C' }}>
+          <h4 style={{ margin: '0 0 15px' }}>Upload Faculty Profiles</h4>
+
+          <div style={{ marginBottom: '15px' }}>
             <label style={labelStyle}>Select Department</label>
-            <select 
-              style={{...inputStyle, marginBottom:'15px'}} 
-              value={bulkDeptId} 
+            <select
+              style={{ ...inputStyle, marginBottom: '15px' }}
+              value={bulkDeptId}
               onChange={e => setBulkDeptId(e.target.value)}
               required
             >
@@ -218,15 +229,15 @@ const FacultyDirectory = () => {
             </select>
           </div>
 
-          <input 
-            type="file" 
-            accept=".xlsx,.xls" 
+          <input
+            type="file"
+            accept=".xlsx,.xls"
             onChange={handleFileUpload}
-            style={{marginBottom:'15px', padding:'8px', border:'1px solid #ddd', borderRadius:'4px', width:'100%'}}
+            style={{ marginBottom: '15px', padding: '8px', border: '1px solid #ddd', borderRadius: '4px', width: '100%' }}
           />
-          
-          <button 
-            onClick={handleBulkUpload} 
+
+          <button
+            onClick={handleBulkUpload}
             style={primaryBtn}
             disabled={uploading}
           >
@@ -237,47 +248,62 @@ const FacultyDirectory = () => {
 
       {showForm && (
         <div style={formContainer}>
-          <form onSubmit={handleCreateProfile} style={{ display: "flex", gap: "15px", alignItems: "flex-end", flexWrap:"wrap" }}>
-            <div style={{flex:1}}><label style={labelStyle}>Name</label><input style={inputStyle} value={profileForm.name} onChange={e=>setProfileForm({...profileForm, name:e.target.value})} required /></div>
-            <div style={{flex:1}}><label style={labelStyle}>Email</label><input type="email" style={inputStyle} value={profileForm.email} onChange={e=>setProfileForm({...profileForm, email:e.target.value})} required={!editId} disabled={editId} /></div>
-            <div style={{width:'150px'}}><label style={labelStyle}>Dept</label><select style={inputStyle} value={profileForm.dept_id} onChange={e=>setProfileForm({...profileForm, dept_id:e.target.value})} required><option value="">Select</option>{depts.map(d=><option key={d.id} value={d.id}>{d.dept_code}</option>)}</select></div>
-            <div style={{width:'150px'}}><label style={labelStyle}>Auth Key</label><input style={inputStyle} value={profileForm.auth_key} onChange={e=>setProfileForm({...profileForm, auth_key:e.target.value})} required /></div>
-            <button type="submit" style={primaryBtn} >{!editId? 'Save' : 'Update'}</button>
+          <form onSubmit={handleCreateProfile} style={{ display: "flex", gap: "15px", alignItems: "flex-end", flexWrap: "wrap" }}>
+            <div style={{ flex: 1 }}><label style={labelStyle}>Name</label><input style={inputStyle} value={profileForm.name} onChange={e => setProfileForm({ ...profileForm, name: e.target.value })} required /></div>
+            <div style={{ flex: 1 }}><label style={labelStyle}>Email</label><input type="email" style={inputStyle} value={profileForm.email} onChange={e => setProfileForm({ ...profileForm, email: e.target.value })} required={!editId} disabled={editId} /></div>
+            <div style={{ width: '150px' }}><label style={labelStyle}>Dept</label><select style={inputStyle} value={profileForm.dept_id} onChange={e => setProfileForm({ ...profileForm, dept_id: e.target.value })} required><option value="">Select</option>{depts.map(d => <option key={d.id} value={d.id}>{d.dept_code}</option>)}</select></div>
+            <div style={{ width: '150px' }}><label style={labelStyle}>Auth Key</label><input style={inputStyle} value={profileForm.auth_key} onChange={e => setProfileForm({ ...profileForm, auth_key: e.target.value })} required /></div>
+            <button type="submit" style={primaryBtn} >{!editId ? 'Save' : 'Update'}</button>
           </form>
         </div>
       )}
 
       {/* FILTER HEADER */}
       <div style={filterContainer}>
-        <div style={{flex:1}}>
-            <label style={labelStyle}>Department</label>
-            <select style={selectStyle} onChange={e => setSelectedDept(e.target.value)} value={selectedDept}>
-                <option value="">Select Dept</option>
-                {depts.map(d=><option key={d.id} value={d.id}>{d.dept_code}</option>)}
-            </select>
+        <div style={{ flex: 1 }}>
+          <label style={labelStyle}>Department</label>
+          <select style={selectStyle} onChange={e => setSelectedDept(e.target.value)} value={selectedDept}>
+            <option value="">Select Dept</option>
+            {depts.map(d => <option key={d.id} value={d.id}>{d.dept_code}</option>)}
+          </select>
         </div>
       </div>
-
+      {selectedDept && (
+        <div style={{ marginBottom: '15px' }}>
+          <input
+            type="text"
+            placeholder="Search by faculty name..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              ...inputStyle,
+              maxWidth: '400px',
+              padding: '10px',
+              fontSize: '14px'
+            }}
+          />
+        </div>
+      )}
       {selectedDept ? (
         <table style={tableStyle}>
           <thead><tr><th style={thStyle}>Name</th><th style={thStyle}>Email</th><th style={thStyle}>Dept</th><th style={thStyle}>Auth Key</th><th style={thStyle}>Action</th></tr></thead>
           <tbody>
             {filteredFacultyList.length > 0 ? (
-              filteredFacultyList.map(f=>(
+              filteredFacultyList.map(f => (
                 <tr key={f.profile_id}>
                   <td style={tdStyle}><strong>{f.faculty_name}</strong></td>
                   <td style={tdStyle}>{f.email}</td>
                   <td style={tdStyle}>{f.dept_code}</td>
                   <td style={tdStyle}>{f.authorization_key}</td>
                   <td style={tdStyle}>
-                    <button onClick={()=>(handleEdit(f))} style={editActionBtn}>Edit</button>
-                    <button onClick={()=>(handleDelete(f.profile_id))} style={deleteActionBtn}>Delete</button>
+                    <button onClick={() => (handleEdit(f))} style={editActionBtn}>Edit</button>
+                    <button onClick={() => (handleDelete(f.profile_id))} style={deleteActionBtn}>Delete</button>
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="4" style={{...tdStyle, textAlign:'center', color:'#999', padding:'20px'}}>
+                <td colSpan="5" style={{ ...tdStyle, textAlign: 'center', color: '#999', padding: '20px' }}>
                   No faculty found for this department.
                 </td>
               </tr>
@@ -285,8 +311,8 @@ const FacultyDirectory = () => {
           </tbody>
         </table>
       ) : (
-        <div style={{textAlign:'center', padding:'50px', color:'#999', background:'#f9f9f9', borderRadius:'8px', marginTop:'20px'}}>
-            Please select a Department to view faculty profiles.
+        <div style={{ textAlign: 'center', padding: '50px', color: '#999', background: '#f9f9f9', borderRadius: '8px', marginTop: '20px' }}>
+          Please select a Department to view faculty profiles.
         </div>
       )}
     </>
@@ -297,182 +323,230 @@ const FacultyDirectory = () => {
    TAB 2: FACULTY USER CREATION
    ========================================================================================= */
 const FacultyUserCreation = () => {
-    const [pendingList, setPendingList] = useState([]);
-    const [selectedFaculty, setSelectedFaculty] = useState(null);
-    const [password, setPassword] = useState("");
-  
-    useEffect(() => { fetchPending(); }, []);
-  
-    const fetchPending = async () => { 
-      try { 
-        const res = await api.get("/admin/faculty");
-        setPendingList(res.data.filter(f => !f.user_id)); 
-      } catch (e) { console.error(e); }
-    };
-  
-    const handleCreateLogin = async (e) => {
-        e.preventDefault();
-        try {
-            await api.post("/admin/faculty-login", { faculty_profile_id: selectedFaculty.profile_id, password });
-            alert("Login Created!"); setSelectedFaculty(null); setPassword(""); fetchPending();
-        } catch (e) { alert("Error: " + (e.response?.data?.error || e.message)); }
-    };
-  
-    return (
-      <div style={{display:'flex', gap:'20px'}}>
-        <div style={{flex:1}}>
-            <h3>Pending Activation</h3>
-            <table style={tableStyle}>
-                <thead><tr><th style={thStyle}>Name</th><th style={thStyle}>Email</th><th style={thStyle}>Action</th></tr></thead>
-                <tbody>{pendingList.map(f=>(<tr key={f.profile_id} style={{background: selectedFaculty?.profile_id===f.profile_id?'#fff3cd':'transparent'}}><td style={tdStyle}>{f.faculty_name}</td><td style={tdStyle}>{f.email}</td><td style={tdStyle}><button onClick={()=>setSelectedFaculty(f)} style={actionBtn}>Select</button></td></tr>))}</tbody>
-            </table>
+  const [pendingList, setPendingList] = useState([]);
+  const [selectedFaculty, setSelectedFaculty] = useState(null);
+  const [password, setPassword] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+
+
+  useEffect(() => { fetchPending(); }, []);
+
+  const fetchPending = async () => {
+    try {
+      const res = await api.get("/api/admin/faculty");
+      setPendingList(res.data.filter(f => !f.user_id));
+    } catch (e) { console.error(e); }
+  };
+
+  const handleCreateLogin = async (e) => {
+    e.preventDefault();
+    try {
+      await api.post("/api/admin/faculty-login", { faculty_profile_id: selectedFaculty.profile_id, password });
+      alert("Login Created!"); setSelectedFaculty(null); setPassword(""); fetchPending();
+    } catch (e) { alert("Error: " + (e.response?.data?.error || e.message)); }
+  };
+
+  const filteredPendingList = pendingList.filter(f =>
+    searchQuery === "" ||
+    f.faculty_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    f.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <div style={{ display: 'flex', gap: '20px' }}>
+      <div style={{ flex: 1 }}>
+        <h3>Pending Activation</h3>
+        <div style={{ marginBottom: '15px' }}>
+          <input
+            type="text"
+            placeholder="Search by name or email..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              ...inputStyle,
+              padding: '10px',
+              fontSize: '14px'
+            }}
+          />
         </div>
-        <div style={{width:'300px', background:'#f9f9f9', padding:'20px', borderRadius:'8px', border:'1px solid #eee', height:'fit-content'}}>
-            <h4>Set Credentials</h4>
-            {selectedFaculty ? <form onSubmit={handleCreateLogin}><p>For: <strong>{selectedFaculty.faculty_name}</strong></p><input type="password" style={inputStyle} value={password} onChange={e=>setPassword(e.target.value)} required placeholder="Password..." /><button type="submit" style={{...primaryBtn, width:'100%', marginTop:'10px'}}>Activate</button></form> : <p style={{color:'#999'}}>Select a faculty...</p>}
-        </div>
+        <table style={tableStyle}>
+          <thead><tr><th style={thStyle}>Name</th><th style={thStyle}>Email</th><th style={thStyle}>Action</th></tr></thead>
+          <tbody>{filteredPendingList.map(f => (<tr key={f.profile_id} style={{ background: selectedFaculty?.profile_id === f.profile_id ? '#fff3cd' : 'transparent' }}><td style={tdStyle}>{f.faculty_name}</td><td style={tdStyle}>{f.email}</td><td style={tdStyle}><button onClick={() => setSelectedFaculty(f)} style={actionBtn}>Select</button></td></tr>))}</tbody>
+        </table>
       </div>
-    );
+      <div style={{ width: '300px', background: '#f9f9f9', padding: '20px', borderRadius: '8px', border: '1px solid #eee', height: 'fit-content' }}>
+        <h4>Set Credentials</h4>
+        {selectedFaculty ? <form onSubmit={handleCreateLogin}><p>For: <strong>{selectedFaculty.faculty_name}</strong></p><input type="password" style={inputStyle} value={password} onChange={e => setPassword(e.target.value)} required placeholder="Password..." /><button type="submit" style={{ ...primaryBtn, width: '100%', marginTop: '10px' }}>Activate</button></form> : <p style={{ color: '#999' }}>Select a faculty...</p>}
+      </div>
+    </div>
+  );
 };
 
 /* =========================================================================================
    TAB 3: STUDENT & CR MANAGEMENT
    ========================================================================================= */
 const StudentCRSection = () => {
-    const [depts, setDepts] = useState([]);
-    const [batches, setBatches] = useState([]);
-    const [sections, setSections] = useState([]);
-    const [students, setStudents] = useState([]);
-  
-    // Filters
-    const [selectedDept, setSelectedDept] = useState("");
-    const [selectedBatch, setSelectedBatch] = useState("");
-    const [selectedSection, setSelectedSection] = useState("");
-    const [semester, setSemester] = useState("1");
-    const [loading, setLoading] = useState(false);
-  
-    // Load Initial Data
-    useEffect(() => { api.get("/admin/depts").then(res => setDepts(res.data)); }, []);
-    
-    // Cascade Batches
-    useEffect(() => { 
-        if (selectedDept) api.get("/admin/batches").then(res => setBatches(res.data.filter(b => b.dept_id === parseInt(selectedDept)))); 
-        else setBatches([]); 
-    }, [selectedDept]);
-    
-    // Cascade Sections
-    useEffect(() => { 
-        if (selectedBatch) api.get("/admin/sections").then(res => setSections(res.data.filter(s => s.batch_id === parseInt(selectedBatch)))); 
-        else setSections([]); 
-    }, [selectedBatch]);
-  
-    const fetchStudents = async () => {
-      if (!selectedSection) return alert("Select a section");
-      setLoading(true);
-      try {
-        const res = await api.get(`/admin/students-by-filter`, { 
-          params: { 
-              section_id: selectedSection, 
-              semester: semester 
-          } 
-        });
-        setStudents(res.data);
-      } catch (e) { 
-          console.error(e);
-          alert("Error fetching students (Ensure timetable exists for this Sem)"); 
-      } finally { 
-          setLoading(false); 
-      }
-    };
-  
-    const handlePromote = async (studentId) => {
-      const pwd = prompt(`Enter password for CR login (Sem ${semester}):`);
-      if (!pwd) return;
-      try {
-        await api.post("/admin/promote-cr", { student_id: studentId, password: pwd, semester: semester });
-        alert("Promoted Successfully!");
-        fetchStudents();
-      } catch (e) { alert(e.message); }
-    };
-  
-    const handleDemote = async (studentId) => {
-        if(!window.confirm("Remove CR privileges?")) return;
-        try {
-            await api.delete(`/admin/demote-cr/${studentId}`);
-            alert("Demoted!");
-            fetchStudents();
-        } catch (e) { alert(e.message); }
-    };
-  
+  const [depts, setDepts] = useState([]);
+  const [batches, setBatches] = useState([]);
+  const [sections, setSections] = useState([]);
+  const [students, setStudents] = useState([]);
+
+  // Filters
+  const [selectedDept, setSelectedDept] = useState("");
+  const [selectedBatch, setSelectedBatch] = useState("");
+  const [selectedSection, setSelectedSection] = useState("");
+  const [semester, setSemester] = useState("1");
+  const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+
+  // Load Initial Data
+  useEffect(() => { api.get("/api/admin/depts").then(res => setDepts(res.data)); }, []);
+
+  // Cascade Batches
+  useEffect(() => {
+    if (selectedDept) api.get("/api/admin/batches").then(res => setBatches(res.data.filter(b => b.dept_id === parseInt(selectedDept))));
+    else setBatches([]);
+  }, [selectedDept]);
+
+  // Cascade Sections
+  useEffect(() => {
+    if (selectedBatch) api.get("/api/admin/sections").then(res => setSections(res.data.filter(s => s.batch_id === parseInt(selectedBatch))));
+    else setSections([]);
+  }, [selectedBatch]);
+  const fetchStudents = async () => {
+    if (!selectedSection) return alert("Select a section");
+    setLoading(true);
+    try {
+      const res = await api.get(`/api/admin/students-by-filter`, {
+        params: {
+          section_id: selectedSection,
+          semester: semester
+        }
+      });
+      setStudents(res.data);
+    } catch (e) {
+      console.error(e);
+      alert("Error fetching students (Ensure timetable exists for this Sem)");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePromote = async (studentId) => {
+    const pwd = prompt(`Enter password for CR login (Sem ${semester}):`);
+    if (!pwd) return;
+    try {
+      await api.post("/api/admin/promote-cr", { student_id: studentId, password: pwd, semester: semester });
+      alert("Promoted Successfully!");
+      fetchStudents();
+    } catch (e) { alert(e.message); }
+  };
+
+  const handleDemote = async (studentId) => {
+    if (!window.confirm("Remove CR privileges?")) return;
+    try {
+      await api.post(`/api/admin/demote-cr/${studentId}`);
+      alert("Demoted!");
+      fetchStudents();
+    } catch (e) { alert(e.message); }
+  };
+
+  const filteredStudents = students.filter(student => {
+    const query = searchQuery.toLowerCase();
     return (
-      <>
-        <h3>Student List & CRs</h3>
-        <p style={{fontSize:'12px', color:'#666', fontStyle:'italic'}}>
-          * Students are shown only if a Timetable exists for the selected Semester.
-        </p>
-        
-        <div style={filterContainer}>
-          <select style={selectStyle} onChange={e => setSelectedDept(e.target.value)} value={selectedDept}><option value="">Dept</option>{depts.map(d=><option key={d.id} value={d.id}>{d.dept_code}</option>)}</select>
-          <select style={selectStyle} onChange={e => setSelectedBatch(e.target.value)} value={selectedBatch} disabled={!selectedDept}><option value="">Batch</option>{batches.map(b=><option key={b.id} value={b.id}>{b.batch_name}</option>)}</select>
-          <select style={selectStyle} onChange={e => setSelectedSection(e.target.value)} value={selectedSection} disabled={!selectedBatch}><option value="">Section</option>{sections.map(s=><option key={s.id} value={s.id}>{s.section_name}</option>)}</select>
-          
-          {/* SEMESTER SELECTOR */}
-          <select style={{...selectStyle, border:'1px solid #AD3A3C', fontWeight:'bold', color:'#AD3A3C'}} onChange={e => setSemester(e.target.value)} value={semester}>
-              {[1,2,3,4,5,6,7,8].map(n => <option key={n} value={n}>Sem {n}</option>)}
-          </select>
-          
-          <button onClick={fetchStudents} style={btnStyle}>Fetch</button>
-        </div>
-        
-        {loading ? <p>Loading...</p> : (
-          <table style={tableStyle}>
-              <thead><tr><th style={thStyle}>Roll</th><th style={thStyle}>Name</th><th style={thStyle}>Status</th><th style={thStyle}>Action</th></tr></thead>
-              <tbody>
-                  {students.length > 0 ? students.map(s => (
-                      <tr key={s.id}>
-                          <td style={tdStyle}>{s.roll_number}</td>
-                          <td style={tdStyle}>{s.full_name}</td>
-                          <td style={tdStyle}>
-                              {s.role === 'cr' ? (
-                                  <span style={{color:'green', fontWeight:'bold', background:'#e6fffa', padding:'2px 6px', borderRadius:'4px', fontSize:'12px'}}>
-                                      CR {s.cr_semester ? `(Sem ${s.cr_semester})` : ''}
-                                  </span>
-                              ) : <span style={{color:'#999', fontSize:'12px'}}>Student</span>}
-                          </td>
-                          <td style={tdStyle}>
-                              {s.role !== 'cr' ? (
-                                  <button onClick={()=>handlePromote(s.id)} style={actionBtn}>Promote</button>
-                              ) : (
-                                  <button onClick={()=>handleDemote(s.id)} style={{...actionBtn, background:'#dc3545'}}>Remove</button>
-                              )}
-                          </td>
-                      </tr>
-                  )) : (
-                      <tr><td colSpan="4" style={{...tdStyle, textAlign:'center', color:'#999', padding:'20px'}}>
-                          No students found.<br/>
-                          <small>(Check if Timetable slots exist for Sem {semester})</small>
-                      </td></tr>
-                  )}
-              </tbody>
-          </table>
-        )}
-      </>
+      student.roll_number.toLowerCase().includes(query) ||
+      student.full_name.toLowerCase().includes(query)
     );
+  });
+
+  return (
+    <>
+      <h3>Student List & CRs</h3>
+      <p style={{ fontSize: '12px', color: '#666', fontStyle: 'italic' }}>
+        * Students are shown only if a Timetable exists for the selected Semester.
+      </p>
+
+      <div style={filterContainer}>
+        <select style={selectStyle} onChange={e => setSelectedDept(e.target.value)} value={selectedDept}><option value="">Dept</option>{depts.map(d => <option key={d.id} value={d.id}>{d.dept_code}</option>)}</select>
+        <select style={selectStyle} onChange={e => setSelectedBatch(e.target.value)} value={selectedBatch} disabled={!selectedDept}><option value="">Batch</option>{batches.map(b => <option key={b.id} value={b.id}>{b.batch_name}</option>)}</select>
+        <select style={selectStyle} onChange={e => setSelectedSection(e.target.value)} value={selectedSection} disabled={!selectedBatch}><option value="">Section</option>{sections.map(s => <option key={s.id} value={s.id}>{s.section_name}</option>)}</select>
+
+        {/* SEMESTER SELECTOR */}
+        <select style={{ ...selectStyle, border: '1px solid #AD3A3C', fontWeight: 'bold', color: '#AD3A3C' }} onChange={e => setSemester(e.target.value)} value={semester}>
+          {[1, 2, 3, 4, 5, 6, 7, 8].map(n => <option key={n} value={n}>Sem {n}</option>)}
+        </select>
+
+        <button onClick={fetchStudents} style={btnStyle}>Fetch</button>
+      </div>
+
+      {loading ? <p>Loading...</p> : (
+        <>
+          {students.length > 0 && (
+            <div style={{ marginBottom: '15px' }}>
+              <input
+                type="text"
+                placeholder="Search by roll number or name..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{
+                  ...inputStyle,
+                  maxWidth: '400px',
+                  padding: '10px',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+          )}
+          <table style={tableStyle}>
+            <thead><tr><th style={thStyle}>Roll</th><th style={thStyle}>Name</th><th style={thStyle}>Status</th><th style={thStyle}>Action</th></tr></thead>
+            <tbody>
+              {filteredStudents.length > 0 ? filteredStudents.map(s => (
+                <tr key={s.id}>
+                  <td style={tdStyle}>{s.roll_number}</td>
+                  <td style={tdStyle}>{s.full_name}</td>
+                  <td style={tdStyle}>
+                    {s.role === 'cr' ? (
+                      <span style={{ color: 'green', fontWeight: 'bold', background: '#e6fffa', padding: '2px 6px', borderRadius: '4px', fontSize: '12px' }}>
+                        CR {s.cr_semester ? `(Sem ${s.cr_semester})` : ''}
+                      </span>
+                    ) : <span style={{ color: '#999', fontSize: '12px' }}>Student</span>}
+                  </td>
+                  <td style={tdStyle}>
+                    {s.role !== 'cr' ? (
+                      <button onClick={() => handlePromote(s.id)} style={actionBtn}>Promote</button>
+                    ) : (
+                      <button onClick={() => handleDemote(s.id)} style={{ ...actionBtn, background: '#dc3545' }}>Remove</button>
+                    )}
+                  </td>
+                </tr>
+              )) : (
+                <tr><td colSpan="4" style={{ ...tdStyle, textAlign: 'center', color: '#999', padding: '20px' }}>
+                  No students found.<br />
+                  <small>(Check if Timetable slots exist for Sem {semester})</small>
+                </td></tr>
+              )}
+            </tbody>
+          </table>
+        </>
+      )}
+    </>
+  );
 };
 
 /* ================= STYLES ================= */
 const tabBtn = (active) => ({ padding: "10px 15px", border: "none", borderBottom: active ? "3px solid #AD3A3C" : "3px solid transparent", background: "none", cursor: "pointer", fontWeight: active ? "bold" : "normal", color: active ? "#AD3A3C" : "#666", fontSize: "14px", transition: "all 0.2s" });
 const formContainer = { backgroundColor: "#f9f9f9", padding: "20px", borderRadius: "8px", marginBottom: "20px", border: "1px solid #eee" };
-const labelStyle = { display:'block', fontSize:'12px', fontWeight:'bold', color:'#555', marginBottom:'5px'};
-const inputStyle = { width:'100%', padding: "8px", border: "1px solid #ccc", borderRadius: "4px", fontSize: "14px", boxSizing:'border-box' };
-const selectStyle = { width:'100%', padding: "8px", borderRadius: "4px", border: "1px solid #ccc" };
-const primaryBtn = { padding: "8px 15px", backgroundColor: "#AD3A3C", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontWeight: "bold", fontSize:"13px" };
-const actionBtn = { padding: "5px 10px", background: "#333", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontSize:"11px" };
+const labelStyle = { display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#555', marginBottom: '5px' };
+const inputStyle = { width: '100%', padding: "8px", border: "1px solid #ccc", borderRadius: "4px", fontSize: "14px", boxSizing: 'border-box' };
+const selectStyle = { width: '100%', padding: "8px", borderRadius: "4px", border: "1px solid #ccc" };
+const primaryBtn = { padding: "8px 15px", backgroundColor: "#AD3A3C", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontWeight: "bold", fontSize: "13px" };
+const actionBtn = { padding: "5px 10px", background: "#333", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "11px" };
 const filterContainer = { display: "flex", gap: "20px", background: "#eee", padding: "15px", borderRadius: "8px", marginBottom: "20px" };
 const btnStyle = { padding: "8px 20px", background: "#333", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" };
-const tableStyle = { width: "100%", borderCollapse: "collapse", marginTop: "15px", backgroundColor:'white' };
-const thStyle = { textAlign: "left", padding: "10px", background: "#eee", borderBottom: "2px solid #ddd", color:'#333', fontSize:'13px' };
-const tdStyle = { padding: "10px", borderBottom: "1px solid #eee", color:'#444', fontSize:'13px' };
+const tableStyle = { width: "100%", borderCollapse: "collapse", marginTop: "15px", backgroundColor: 'white' };
+const thStyle = { textAlign: "left", padding: "10px", background: "#eee", borderBottom: "2px solid #ddd", color: '#333', fontSize: '13px' };
+const tdStyle = { padding: "10px", borderBottom: "1px solid #eee", color: '#444', fontSize: '13px' };
 const editActionBtn = { padding: "6px 12px", background: "#f39c12", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", marginRight: "5px", fontSize: "12px" };
 const deleteActionBtn = { padding: "6px 12px", background: "#e74c3c", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "12px" };
 

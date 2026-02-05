@@ -24,7 +24,7 @@ const AttendanceShortage = () => {
   useEffect(() => {
     const loadBasics = async () => {
         try {
-            const d = await api.get("/admin/depts");
+            const d = await api.get("/api/admin/depts");
             setDepts(d.data);
         } catch (e) { console.error(e); }
     };
@@ -34,7 +34,7 @@ const AttendanceShortage = () => {
   // --- 5. Cascading Dropdowns ---
   useEffect(() => {
     if (selectedDept) {
-      api.get("/admin/batches").then(res => {
+      api.get("/api/admin/batches").then(res => {
         setBatches(res.data.filter(b => b.dept_id === parseInt(selectedDept)));
       });
     } else setBatches([]);
@@ -42,7 +42,7 @@ const AttendanceShortage = () => {
 
   useEffect(() => {
     if (selectedBatch) {
-      api.get("/admin/sections").then(res => {
+      api.get("/api/admin/sections").then(res => {
         setSections(res.data.filter(s => s.batch_id === parseInt(selectedBatch)));
       });
     } else setSections([]);
@@ -51,7 +51,7 @@ const AttendanceShortage = () => {
   // --- 6. Fetch Courses relevant to the Class & Semester ---
   useEffect(() => {
     if (selectedSection && semester) {
-        api.get(`/common/timetable-by-class?section_id=${selectedSection}&semester=${semester}`)
+        api.get(`/api/common/timetable-by-class?section_id=${selectedSection}&semester=${semester}`)
            .then(res => {
                const uniqueCourses = [];
                const map = new Map();
@@ -83,7 +83,7 @@ const AttendanceShortage = () => {
     setLoading(true);
     try {
       // ✅ CHANGED: Using dedicated shortage endpoint
-      const res = await api.get("/admin/attendance-shortage", {
+      const res = await api.get("/api/admin/attendance-shortage", {
         params: {
             section_id: selectedSection,
             semester: semester,

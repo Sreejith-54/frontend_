@@ -42,12 +42,12 @@ export default function MonthlyAttendanceDashboard() {
   const courseRef = useRef(null);
 
   // ... (All useEffects remain the same) ...
-  useEffect(() => { api.get("/admin/depts").then(res => setDepts(res.data)).catch(console.error); }, []);
-  useEffect(() => { if (!deptId) { setBatches([]); return; } api.get("/admin/batches").then(res => setBatches(res.data.filter(b => b.dept_id === +deptId))).catch(console.error); }, [deptId]);
-  useEffect(() => { if (!batchId) { setSections([]); return; } api.get("/admin/sections").then(res => setSections(res.data.filter(s => s.batch_id === +batchId))).catch(console.error); }, [batchId]);
+  useEffect(() => { api.get("/api/admin/depts").then(res => setDepts(res.data)).catch(console.error); }, []);
+  useEffect(() => { if (!deptId) { setBatches([]); return; } api.get("/api/admin/batches").then(res => setBatches(res.data.filter(b => b.dept_id === +deptId))).catch(console.error); }, [deptId]);
+  useEffect(() => { if (!batchId) { setSections([]); return; } api.get("/api/admin/sections").then(res => setSections(res.data.filter(s => s.batch_id === +batchId))).catch(console.error); }, [batchId]);
   useEffect(() => {
     if (!sectionId || !semester) { setCourses([]); return; }
-    api.get("/common/timetable", { params: { section_id: sectionId, semester } }).then(res => {
+    api.get("/api/common/timetable", { params: { section_id: sectionId, semester } }).then(res => {
       const unique = []; const seen = new Set();
       res.data.forEach(slot => { if (!seen.has(slot.course_code)) { seen.add(slot.course_code); unique.push({ course_code: slot.course_code, course_name: slot.course_name }); } });
       setCourses(unique);
@@ -70,7 +70,7 @@ export default function MonthlyAttendanceDashboard() {
     if (!sectionId || !semester || !courseCode || !month) { alert("Please select all filters."); return; }
     setLoading(true); setData([]);
     try {
-      const res = await api.get("/attendance/periodic", {
+      const res = await api.get("/api/attendance/periodic", {
         params: { sectionId: Number(sectionId), semester: Number(semester), courseCode, month }
       });
       setData(res.data);

@@ -36,8 +36,8 @@ const SubjectManagement = () => {
     try {
       setLoading(true);
       const [deptRes, courseRes] = await Promise.all([
-        api.get("/admin/depts"),
-        api.get("/admin/courses")
+        api.get("/api/admin/depts"),
+        api.get("/api/admin/courses")
       ]);
       setDepts(deptRes.data);
       setCourses(courseRes.data);
@@ -53,7 +53,7 @@ const SubjectManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await api.post("/admin/courses", formData);
+      await api.post("/api/admin/courses", formData);
       alert("Course Added Successfully!");
       setFormData({ code: "", name: "", credits: "", dept_id: "" }); // Reset form
       fetchData(); // Refresh list
@@ -66,7 +66,7 @@ const SubjectManagement = () => {
   const handleDelete = async (code) => {
     if (!window.confirm(`Are you sure you want to delete course ${code}?`)) return;
     try {
-      await api.delete(`/admin/courses/${code}`);
+      await api.post(`/api/admin/delete/courses/${code}`);
       fetchData();
     } catch (e) {
       alert("Error deleting course");

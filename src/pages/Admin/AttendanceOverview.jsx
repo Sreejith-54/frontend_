@@ -21,12 +21,12 @@ const AttendanceOverview = () => {
 
   // --- 1. Load Dropdown Data ---
   useEffect(() => {
-    api.get("/admin/depts").then(res => setDepts(res.data)).catch(console.error);
+    api.get("/api/admin/depts").then(res => setDepts(res.data)).catch(console.error);
   }, []);
 
   useEffect(() => {
     if (selectedDept) {
-      api.get("/admin/batches").then(res => {
+      api.get("/api/admin/batches").then(res => {
         setBatches(res.data.filter(b => b.dept_id === parseInt(selectedDept)));
       });
     } else setBatches([]);
@@ -34,7 +34,7 @@ const AttendanceOverview = () => {
 
   useEffect(() => {
     if (selectedBatch) {
-      api.get("/admin/sections").then(res => {
+      api.get("/api/admin/sections").then(res => {
         setSections(res.data.filter(s => s.batch_id === parseInt(selectedBatch)));
       });
     } else setSections([]);
@@ -49,7 +49,7 @@ const AttendanceOverview = () => {
 
     try {
       // Use the NEW dedicated endpoint
-      const res = await api.get(`/admin/daily-attendance-overview`, {
+      const res = await api.get(`/api/admin/daily-attendance-overview`, {
         params: { 
             section_id: selectedSection, 
             date: selectedDate, 

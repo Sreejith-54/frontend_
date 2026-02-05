@@ -50,7 +50,7 @@ const ViewTimeTable = () => {
 
   // --- EFFECTS ---
   useEffect(() => {
-    api.get("/admin/depts").then(res => setDepts(res.data)).catch(console.error);
+    api.get("/api/admin/depts").then(res => setDepts(res.data)).catch(console.error);
   }, []);
   useEffect(() => {
     const close = (e) => {
@@ -64,7 +64,7 @@ const ViewTimeTable = () => {
   }, []);
   useEffect(() => {
     if (selectedDept) {
-      api.get("/admin/batches").then(res => {
+      api.get("/api/admin/batches").then(res => {
         setBatches(res.data.filter(b => b.dept_id === parseInt(selectedDept)));
       });
     } else setBatches([]);
@@ -72,7 +72,7 @@ const ViewTimeTable = () => {
 
   useEffect(() => {
     if (selectedBatch) {
-      api.get("/admin/sections").then(res => {
+      api.get("/api/admin/sections").then(res => {
         setSections(res.data.filter(s => s.batch_id === parseInt(selectedBatch)));
       });
     } else setSections([]);
@@ -85,7 +85,7 @@ const ViewTimeTable = () => {
     const mondayDate = getMonday(selectedDate).toISOString().split('T')[0];
 
     try {
-      const res = await api.get(`/common/week-grid`, {
+      const res = await api.get(`/api/common/week-grid`, {
         params: { section_id: selectedSection, start_date: mondayDate, semester }
       });
       setTimetable(res.data);
@@ -128,7 +128,7 @@ const ViewTimeTable = () => {
 
     // 2. Fetch Attendance Records
     try {
-      const res = await api.get(`/admin/records-by-session/${entry.session_id}`);
+      const res = await api.get(`/api/admin/records-by-session/${entry.session_id}`);
       const records = res.data;
       setAttendanceRecords(records);
 

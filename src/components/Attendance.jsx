@@ -47,7 +47,7 @@ export default function Attendance() {
     try {
       setLoading(true);
       setError('');
-      const response = await fetch(`${API_URL}/cr/students-by-studentid`, {
+      const response = await fetch(`${API_URL}/api/cr/students-by-studentid`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -72,7 +72,7 @@ export default function Attendance() {
   async function fetchTimetable() {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/common/timetable-by-class`, {
+      const response = await fetch(`${API_URL}/api/common/timetable-by-class`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -208,8 +208,8 @@ export default function Attendance() {
 
       // Verify with faculty code
       if (!isFreeHour) {
-      const verifyResponse = await fetch(`${API_URL}/faculty/verify`, {
-        method: 'PUT',
+      const verifyResponse = await fetch(`${API_URL}/api/faculty/verify`, {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -226,7 +226,7 @@ export default function Attendance() {
       }
       }
       // Submit attendance
-       const response = await fetch(`${API_URL}/cr/attendance`, {
+       const response = await fetch(`${API_URL}/api/cr/attendance`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -263,6 +263,8 @@ export default function Attendance() {
       console.error('Error submitting attendance:', err);
     } finally {
       setLoading(false);
+      setFacultyCode('');
+
     }
   }
 
