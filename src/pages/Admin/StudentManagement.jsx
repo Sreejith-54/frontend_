@@ -77,14 +77,13 @@ const StudentManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedSection) return alert("Please select Department, Batch, and Section first.");
-
     try {
       if (editId) {
         // UPDATE
         await api.post(`/api/admin/edit/students/${editId}`, {
           name: formData.name,
           roll: formData.roll,
-          email: formData.email,
+          email: `${formData.roll.toLowerCase()}@students.amrita.edu`,
           section_id: selectedSection // Keep them in the currently selected section
         });
         alert("Student Updated");
@@ -92,6 +91,7 @@ const StudentManagement = () => {
         // CREATE
         await api.post("/api/admin/students", {
           ...formData,
+          email: `${formData.roll.toLowerCase}@students.amrita.edu`,
           section_id: selectedSection
         });
         alert("Student Added");
@@ -113,7 +113,6 @@ const StudentManagement = () => {
     setFormData({
       roll: student.roll_number,
       name: student.full_name,
-      email: student.email
     });
     setShowBulkUpload(false); // Close bulk upload if open
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -151,7 +150,6 @@ const StudentManagement = () => {
       const formatted = jsonData.map(row => ({
         roll: row.roll || row.Roll || row.roll_number || row.Roll_Number || "",
         name: row.name || row.Name || row.full_name || row.Full_Name || "",
-        email: row.email || row.Email || ""
       }));
 
       setBulkData(formatted);
@@ -177,7 +175,7 @@ const StudentManagement = () => {
       const studentsToUpload = bulkData.map(student => ({
         roll: student.roll,
         name: student.name,
-        email: student.email,
+        email: `${student.roll.toLowerCase()}@students.amrita.edu`,
         section_id: selectedSection
       }));
 
@@ -198,8 +196,8 @@ const StudentManagement = () => {
 
   const downloadTemplate = () => {
     const template = [
-      { roll_number: "AM.SC.U4CSE23001", full_name: "John Raj", email: "john@students.amrita.edu" },
-      { roll_number: "AM.SC.U4CSE23003", full_name: "Ani Kumar", email: "ani@students.amrita.edu" }
+      { roll_number: "AM.SC.U4CSE23001", full_name: "John Raj"},
+      { roll_number: "AM.SC.U4CSE23003", full_name: "Ani Kumar"}
     ];
 
     const ws = XLSX.utils.json_to_sheet(template);
@@ -294,10 +292,6 @@ const StudentManagement = () => {
                 <div style={{ flex: 2 }}>
                   <label style={labelStyle}>Full Name</label>
                   <input style={inputStyle} value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required placeholder="Student Name" />
-                </div>
-                <div style={{ flex: 2 }}>
-                  <label style={labelStyle}>Email</label>
-                  <input type="email" style={inputStyle} value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} required placeholder="student@students.amrita.edu" />
                 </div>
                 <button type="submit" style={editId ? updateBtn : primaryBtn}>{editId ? "Update" : "Add"}</button>
                 {editId && <button type="button" onClick={handleCancel} style={cancelBtn}>Cancel</button>}

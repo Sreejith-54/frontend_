@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import './SubjectWiseReport.css';
 
@@ -129,216 +128,219 @@ function SubjectWiseReport() {
 
   // --- RENDER ---
   return (
-    <div className='container'>
-      
-      {/* 1. Header with Symmetric Grid Layout */}
-      <div className='operator' style={headerContainerStyle}>
-        <div style={gridStyle}>
-            {/* Row 1 */}
-            <div className='selection-box' style={boxStyle}>
-                <label style={labelStyle}>Dept</label>
-                <select style={selectStyle} value={selectedDept} onChange={(e) => {
-                    setSelectedDept(e.target.value); setSelectedBatch(""); setSelectedClass("");
-                }}>
-                    <option value="">Select Dept</option>
-                    {depts.map((d) => <option value={d.id} key={d.id}>{d.dept_code}</option>)}
-                </select>
-            </div>
-            
-            <div className='selection-box' style={boxStyle}>
-                <label style={labelStyle}>Batch</label>
-                <select style={selectStyle} value={selectedBatch} disabled={!selectedDept} onChange={(e) => {
-                    setSelectedBatch(e.target.value); setSelectedClass("");
-                }}>
-                    <option value="">Select Batch</option>
-                    {batches.filter(b => b.dept_id === parseInt(selectedDept)).map((b) => (
-                        <option value={b.id} key={b.id}>{b.batch_name}</option>
-                    ))}
-                </select>
-            </div>
+    <div>
+      {/* FILTER BAR - Matching AttendanceOverview style */}
+      <div style={filterContainer}>
+        <select 
+          style={selectStyle} 
+          value={selectedDept} 
+          onChange={(e) => {
+            setSelectedDept(e.target.value); 
+            setSelectedBatch(""); 
+            setSelectedClass("");
+          }}
+        >
+          <option value="">Select Dept</option>
+          {depts.map((d) => <option value={d.id} key={d.id}>{d.dept_code}</option>)}
+        </select>
+        
+        <select 
+          style={selectStyle} 
+          value={selectedBatch} 
+          disabled={!selectedDept} 
+          onChange={(e) => {
+            setSelectedBatch(e.target.value); 
+            setSelectedClass("");
+          }}
+        >
+          <option value="">Select Batch</option>
+          {batches.filter(b => b.dept_id === parseInt(selectedDept)).map((b) => (
+            <option value={b.id} key={b.id}>{b.batch_name}</option>
+          ))}
+        </select>
 
-            <div className='selection-box' style={boxStyle}>
-                <label style={labelStyle}>Class</label>
-                <select style={selectStyle} value={selectedClass} disabled={!selectedBatch} onChange={(e) => setSelectedClass(e.target.value)}>
-                    <option value="">Select Class</option>
-                    {sections.filter(s => s.batch_id === parseInt(selectedBatch)).map((sec) => (
-                        <option value={sec.id} key={sec.id}>{sec.section_name}</option>
-                    ))}
-                </select>
-            </div>
+        <select 
+          style={selectStyle} 
+          value={selectedClass} 
+          disabled={!selectedBatch} 
+          onChange={(e) => setSelectedClass(e.target.value)}
+        >
+          <option value="">Select Section</option>
+          {sections.filter(s => s.batch_id === parseInt(selectedBatch)).map((sec) => (
+            <option value={sec.id} key={sec.id}>{sec.section_name}</option>
+          ))}
+        </select>
 
-            <div className='selection-box' style={boxStyle}>
-                <label style={labelStyle}>Semester (Req)</label>
-                <select style={selectStyle} value={selectedSemester} onChange={(e) => setSelectedSemester(e.target.value)}>
-                    <option value="">Select</option>
-                    {[1,2,3,4,5,6,7,8].map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-            </div>
+        <select 
+          style={selectStyle} 
+          value={selectedSemester} 
+          onChange={(e) => setSelectedSemester(e.target.value)}
+        >
+          <option value="">Select Sem</option>
+          {[1,2,3,4,5,6,7,8].map(s => <option key={s} value={s}>Sem {s}</option>)}
+        </select>
 
-            {/* Row 2 */}
-            <div className='selection-box' style={boxStyle}>
-                <label style={labelStyle}>Subject (Opt)</label>
-                <select style={selectStyle} value={selectedSubject} onChange={(e) => setSelectedSubject(e.target.value)}>
-                    <option value="">All Subjects</option>
-                    {courses.map((course) => (
-                    <option value={course.course_code} key={course.course_code}>{course.course_name}</option>
-                    ))}
-                </select>
-            </div>
+        <select 
+          style={selectStyle} 
+          value={selectedSubject} 
+          onChange={(e) => setSelectedSubject(e.target.value)}
+        >
+          <option value="">All Subjects</option>
+          {courses.map((course) => (
+            <option value={course.course_code} key={course.course_code}>{course.course_name}</option>
+          ))}
+        </select>
 
-            <div className='selection-box' style={boxStyle}>
-                <label style={labelStyle}>From Date</label>
-                <input type="date" style={selectStyle} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-            </div>
-
-            <div className='selection-box' style={boxStyle}>
-                <label style={labelStyle}>To Date</label>
-                <input type="date" style={selectStyle} value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-            </div>
-
-            <div className='selection-box' style={{...boxStyle, justifyContent: 'flex-end'}}>
-                <button 
-                    onClick={downloadCSV} 
-                    disabled={pivotedData.length === 0}
-                    style={{
-                        ...selectStyle,
-                        backgroundColor: pivotedData.length > 0 ? '#4CAF50' : '#e0e0e0',
-                        color: pivotedData.length > 0 ? 'white' : '#888',
-                        cursor: pivotedData.length > 0 ? 'pointer' : 'not-allowed',
-                        fontWeight: 'bold',
-                        border: 'none',
-                        height: '38px' // Match height of inputs
-                    }}
-                >
-                    Download CSV
-                </button>
-            </div>
+        <div style={{display:'flex', alignItems:'center', gap:'5px', background:'white', padding:'0 5px', borderRadius:'4px', border:'1px solid #ccc'}}>
+          <label style={{fontSize:'12px', fontWeight:'bold', color:'#555', paddingLeft:'5px'}}>From:</label>
+          <input 
+            type="date" 
+            style={{...selectStyle, border:'none', minWidth:'120px'}} 
+            value={startDate} 
+            onChange={(e) => setStartDate(e.target.value)} 
+          />
         </div>
+
+        <div style={{display:'flex', alignItems:'center', gap:'5px', background:'white', padding:'0 5px', borderRadius:'4px', border:'1px solid #ccc'}}>
+          <label style={{fontSize:'12px', fontWeight:'bold', color:'#555', paddingLeft:'5px'}}>To:</label>
+          <input 
+            type="date" 
+            style={{...selectStyle, border:'none', minWidth:'120px'}} 
+            value={endDate} 
+            onChange={(e) => setEndDate(e.target.value)} 
+          />
+        </div>
+
+        <button 
+          onClick={downloadCSV} 
+          disabled={pivotedData.length === 0}
+          style={{
+            ...btnStyle,
+            backgroundColor: pivotedData.length > 0 ? '#AD3A3C' : '#ccc',
+            cursor: pivotedData.length > 0 ? 'pointer' : 'not-allowed',
+            opacity: pivotedData.length > 0 ? 1 : 0.6
+          }}
+        >
+          Download CSV
+        </button>
       </div>
 
-      {/* 2. Main Report Area */}
-      <div className='main'>
-        <div className='report' style={{overflowX: 'auto', maxHeight: '75vh'}}>
-          {loading ? <p style={{textAlign: 'center', marginTop: '20px'}}>Loading Report...</p> : (
-            <table className="report-table" style={{borderCollapse: 'separate', borderSpacing: 0}}>
-              <thead style={{position: 'sticky', top: 0, zIndex: 10}}>
-                <tr>
-                  {/* Sticky Columns (Neutral Gray Background) */}
-                  <th style={{...stickyHeaderStyle, left: 0, zIndex: 20}}>Roll No</th>
-                  <th style={{...stickyHeaderStyle, left: '120px', zIndex: 20}}>Name</th>
-                  {/* Subject Columns */}
-                  {uniqueSubjects.map(sub => (
-                    <th key={sub} style={headerCellStyle}>{sub}</th>
-                  ))}
+      {/* REPORT TABLE */}
+      {loading ? (
+        <p style={{textAlign: 'center', marginTop: '30px'}}>Loading...</p>
+      ) : (
+        <div style={{overflowX: 'auto', maxHeight: '75vh'}}>
+          <table style={tableStyle}>
+            <thead>
+              <tr>
+                {/* Sticky Columns */}
+                <th style={{...thStyle, position: 'sticky', left: 0, top: 0, zIndex: 20, background: '#eee'}}>Roll No</th>
+                <th style={{...thStyle, position: 'sticky', left: '120px', top: 0, zIndex: 20, background: '#eee', borderRight: '2px solid #ddd'}}>Name</th>
+                {/* Subject Columns */}
+                {uniqueSubjects.map(sub => (
+                  <th key={sub} style={thStyle}>{sub}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {pivotedData.length > 0 ? pivotedData.map((student) => (
+                <tr key={student.roll_number}>
+                  <td style={{...tdStyle, position: 'sticky', left: 0, background: 'white', fontWeight: '500', zIndex: 10}}>
+                    {student.roll_number}
+                  </td>
+                  <td style={{...tdStyle, position: 'sticky', left: '120px', background: 'white', fontWeight: '500', zIndex: 10, textAlign:'left', borderRight: '2px solid #eee'}}>
+                    {student.full_name}
+                  </td>
+                  
+                  {uniqueSubjects.map(subject => {
+                    const data = student.attendance[subject];
+                    if (!data) return <td key={subject} style={{...tdStyle, textAlign:'center'}}>-</td>;
+
+                    const bgColor = data.percentage < 75 ? '#ffcccc' : data.percentage < 80 ? '#fff3cd' : '#d4edda';
+                    const textColor = data.percentage < 75 ? '#a00' : data.percentage < 80 ? '#856404' : '#155724';
+
+                    return (
+                      <td key={subject} style={{...tdStyle, backgroundColor: bgColor, color: textColor, textAlign:'center'}}>
+                        <div style={{fontWeight:'bold'}}>{data.percentage}%</div>
+                        <div style={{fontSize:'11px', color: textColor, opacity: 0.8}}>({data.attended}/{data.total})</div>
+                      </td>
+                    );
+                  })}
                 </tr>
-              </thead>
-              <tbody>
-                {pivotedData.length > 0 ? pivotedData.map((student) => (
-                    <tr key={student.roll_number} style={{backgroundColor: 'white', borderBottom: '1px solid #ddd'}}>
-                        <td style={{...stickyCellStyle, left: 0}}>{student.roll_number}</td>
-                        <td style={{...stickyCellStyle, left: '120px', textAlign:'left'}}>{student.full_name}</td>
-                        
-                        {uniqueSubjects.map(subject => {
-                            const data = student.attendance[subject];
-                            if (!data) return <td key={subject} style={cellStyle}>-</td>;
-
-                            const bgColor = data.percentage < 75 ? '#ffcccc' : data.percentage < 80 ? '#fff3cd' : '#d4edda';
-                            const textColor = data.percentage < 75 ? '#a00' : data.percentage < 80 ? '#856404' : '#155724';
-
-                            return (
-                                <td key={subject} style={{...cellStyle, backgroundColor: bgColor, color: textColor}}>
-                                    <div style={{fontWeight:'bold'}}>{data.percentage}%</div>
-                                    <div style={{fontSize:'0.75em'}}>({data.attended}/{data.total})</div>
-                                </td>
-                            );
-                        })}
-                    </tr>
-                )) : (
-                    <tr>
-                        <td colSpan={uniqueSubjects.length + 2} style={{textAlign: 'center', padding: '30px', color: '#666'}}>
-                            {!selectedClass ? "Please select a Class and Semester" : "No records found"}
-                        </td>
-                    </tr>
-                )}
-              </tbody>
-            </table>
-          )}
+              )) : (
+                <tr>
+                  <td colSpan={uniqueSubjects.length + 2} style={{textAlign: 'center', padding: '30px', color: '#999'}}>
+                    {!selectedClass ? "Please select a Section and Semester" : "No records found"}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
-      </div>
+      )}
     </div>
   );
 }
 
-// --- STYLES ---
+/* ================= STYLES (Matching AttendanceOverview) ================= */
 
-const headerContainerStyle = { 
-    backgroundColor: '#f8f9fa', 
-    margin: '20px', 
-    padding: '25px', 
-    borderRadius: '12px',
-    boxShadow: '0 2px 5px rgba(0,0,0,0.05)'
+const filterContainer = {
+  display: "flex", 
+  gap: "10px", 
+  background: "#f5f5f5", 
+  marginTop: "20px",
+  padding: "15px", 
+  borderRadius: "8px", 
+  alignItems: "center", 
+  marginBottom: "20px", 
+  flexWrap: 'wrap', 
+  border: "1px solid #ddd"
 };
 
-const gridStyle = {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(4, 1fr)', // 4 Equal Columns
-    gap: '20px',
-    alignItems: 'end'
+const selectStyle = {
+  padding: "8px", 
+  borderRadius: "4px", 
+  border: "1px solid #ccc", 
+  minWidth: "100px", 
+  fontSize: '13px'
 };
 
-const boxStyle = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '5px'
+const btnStyle = {
+  padding: "8px 20px", 
+  background: "#AD3A3C", 
+  color: "white", 
+  border: "none", 
+  borderRadius: "4px", 
+  cursor: "pointer", 
+  fontWeight: "bold", 
+  marginLeft: "auto"
 };
 
-const labelStyle = { 
-    fontSize: '0.85rem', 
-    fontWeight: '600', 
-    color: '#444', 
-    marginLeft: '2px'
+const tableStyle = {
+  width: "100%",
+  borderCollapse: "collapse",
+  backgroundColor: "white",
+  boxShadow: "0 1px 3px rgba(0,0,0,0.1)"
 };
 
-const selectStyle = { 
-    padding: '8px 12px', 
-    borderRadius: '6px', 
-    border: '1px solid #ccc',
-    fontSize: '0.9rem',
-    width: '100%',
-    boxSizing: 'border-box'
+const thStyle = {
+  position:"sticky",
+  background: "#eee",
+  top: "0", 
+  color: "#333", 
+  padding: "12px", 
+  borderBottom: "2px solid #ddd", 
+  textAlign: "left", 
+  fontSize: '13px',
+  whiteSpace: 'nowrap',
+  zIndex: '10'
 };
 
-// Table Styles
-const headerCellStyle = {
-    backgroundColor: '#e9ecef', // Neutral Gray
-    color: '#495057',
-    padding: '12px 15px',
-    fontWeight: 'bold',
-    borderBottom: '2px solid #dee2e6',
-    whiteSpace: 'nowrap'
-};
-
-const stickyHeaderStyle = {
-    ...headerCellStyle,
-    position: 'sticky',
-    top: 0,
-    backgroundColor: '#e9ecef', // Match header color (opaque)
-    borderRight: '1px solid #dee2e6'
-};
-
-const cellStyle = {
-    padding: '10px',
-    borderBottom: '1px solid #eee',
-    textAlign: 'center',
-    verticalAlign: 'middle'
-};
-
-const stickyCellStyle = {
-    ...cellStyle,
-    position: 'sticky',
-    backgroundColor: '#f8f9fa', // Slightly different gray for sticky columns
-    borderRight: '1px solid #dee2e6',
-    fontWeight: '500',
+const tdStyle = {
+  padding: "12px",
+  borderBottom: "1px solid #eee",
+  color: "#555",
+  fontSize: "13px"
 };
 
 export default SubjectWiseReport;

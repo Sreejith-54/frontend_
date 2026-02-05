@@ -118,10 +118,10 @@ const AdminDashboard = () => {
           {role === 'admin' && (
           <>
           <button style={navBtn(activeSection === "students")} onClick={() => setActiveSection("students")}>Student Management</button>
-          <button style={navBtn(activeSection === "users")} onClick={() => setActiveSection("users")}>User & Role Mgmt</button>
+          <button style={navBtn(activeSection === "users")} onClick={() => setActiveSection("users")}>User & Role Management</button>
           </>
           )}
-          <button style={navBtn(activeSection === "attendance")} onClick={() => setActiveSection("attendance")}>Attendance Overview</button>
+          <button style={navBtn(activeSection === "attendance")} onClick={() => setActiveSection("attendance")}>Class Attendance Overview</button>
           <button style={navBtn(activeSection === "shortage")} onClick={() => setActiveSection("shortage")}>Shortage List</button>
           <button style={navBtn(activeSection === "reports")} onClick={() => setActiveSection("reports")}>Reports</button>
           {role === 'admin' &&<button style={navBtn(activeSection === "password_reset")} onClick={() => setActiveSection("password_reset")}>Password Reset</button>}
@@ -238,8 +238,8 @@ const getSectionTitle = (key) => {
     case "batches": return "Batch Configuration";
     case "sections": return "Section Configuration";
     case "subjects": return "Subject & Course Configuration";
-    case "attendance": return "Attendance Overview";
-    case "reports": return "Reports";
+    case "attendance": return "Class Attendance Overview";
+    case "reports": return "";
     case "shortage": return "Attendance Shortage (<75%)";
     case "password_reset": return "Password Reset";
     default: return "";
