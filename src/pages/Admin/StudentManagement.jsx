@@ -91,7 +91,7 @@ const StudentManagement = () => {
         // CREATE
         await api.post("/api/admin/students", {
           ...formData,
-          email: `${formData.roll.toLowerCase}@am.students.amrita.edu`,
+          email: `${formData.roll.toLowerCase()}@am.students.amrita.edu`,
           section_id: selectedSection
         });
         alert("Student Added");
