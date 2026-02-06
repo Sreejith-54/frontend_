@@ -83,7 +83,7 @@ const StudentManagement = () => {
         await api.post(`/api/admin/edit/students/${editId}`, {
           name: formData.name,
           roll: formData.roll,
-          email: `${formData.roll.toLowerCase()}@students.amrita.edu`,
+          email: `${formData.roll.toLowerCase()}@am.students.amrita.edu`,
           section_id: selectedSection // Keep them in the currently selected section
         });
         alert("Student Updated");
@@ -91,7 +91,7 @@ const StudentManagement = () => {
         // CREATE
         await api.post("/api/admin/students", {
           ...formData,
-          email: `${formData.roll.toLowerCase}@students.amrita.edu`,
+          email: `${formData.roll.toLowerCase}@am.students.amrita.edu`,
           section_id: selectedSection
         });
         alert("Student Added");
@@ -175,7 +175,7 @@ const StudentManagement = () => {
       const studentsToUpload = bulkData.map(student => ({
         roll: student.roll,
         name: student.name,
-        email: `${student.roll.toLowerCase()}@students.amrita.edu`,
+        email: `${student.roll.toLowerCase()}@am.students.amrita.edu`,
         section_id: selectedSection
       }));
 
