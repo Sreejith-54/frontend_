@@ -155,7 +155,7 @@ const FacultyDirectory = () => {
       }));
 
       await api.post("/api/admin/faculty-bulk-upload", {
-        profiles: profilesWithDeptId
+        faculty_data: profilesWithDeptId
       });
 
       alert(`Success! ${bulkData.length} Faculty Profiles Created!`);
