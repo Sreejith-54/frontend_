@@ -38,7 +38,7 @@ const FacultyDirectory = () => {
   const [depts, setDepts] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [showBulkUpload, setShowBulkUpload] = useState(false);
-  const [profileForm, setProfileForm] = useState({ name: "", email: "", dept_id: "", auth_key: "" });
+  const [profileForm, setProfileForm] = useState({ name: "", email: "", dept_id: "", auth_key: "", password: "" });
   const [bulkData, setBulkData] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [bulkDeptId, setBulkDeptId] = useState("");
@@ -62,7 +62,7 @@ const FacultyDirectory = () => {
 
   const handleCancel = () => {
     setEditId(null);
-    setProfileForm({ name: "", email: "", dept_id: "", auth_key: "" });
+    setProfileForm({ name: "", email: "", dept_id: "", auth_key: "" , password: ""});
   };
 
   const handleDelete = async (id) => {
@@ -82,7 +82,8 @@ const FacultyDirectory = () => {
       name: faculty.faculty_name,
       dept_id: faculty.dept_id,
       email: '',
-      auth_key: faculty.authorization_key
+      auth_key: faculty.authorization_key,
+      password: faculty.password
     });
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -104,7 +105,7 @@ const FacultyDirectory = () => {
         alert("Faculty Profile Added!");
       }
       setShowForm(false);
-      setProfileForm({ name: "", email: "", dept_id: "", auth_key: "" });
+      setProfileForm({ name: "", email: "", dept_id: "", auth_key: "" , password: ""});
       fetchData();
     } catch (e) { alert("Error: " + (e.response?.data?.error || e.message)); }
   };
@@ -124,7 +125,8 @@ const FacultyDirectory = () => {
       const formatted = jsonData.map(row => ({
         name: row.name || row.Name || "",
         email: row.email || row.Email || "",
-        auth_key: row.auth_key || row.Auth_Key || row.auth_key || ""
+        auth_key: row.auth_key || row.Auth_Key || row.auth_key || "",
+        password: row.password || row.Password || row.PASSWORD || ""
       }));
 
       setBulkData(formatted);
@@ -151,8 +153,10 @@ const FacultyDirectory = () => {
         name: faculty.name,
         email: faculty.email,
         dept_id: parseInt(bulkDeptId),
-        auth_key: faculty.auth_key
+        auth_key: faculty.auth_key,
+        password: faculty.password
       }));
+      console.log(profilesWithDeptId);
 
       await api.post("/api/admin/faculty-bulk-upload", {
         faculty_data: profilesWithDeptId
@@ -174,9 +178,9 @@ const FacultyDirectory = () => {
 
   const downloadTemplate = () => {
     const template = [
-      { name: "Dr John Doe", email: "john@example.com", auth_key: "ABC123" },
-      { name: "Dr Jane Smith", email: "jane@example.com", auth_key: "XYZ456" },
-      { name: "Dr Robert Brown", email: "robert@example.com", auth_key: "DEF789" }
+      { name: "Dr John Doe", email: "john@example.com", auth_key: "ABC123", password: "ABC" },
+      { name: "Dr Jane Smith", email: "jane@example.com", auth_key: "XYZ456", password: "cde" },
+      { name: "Dr Robert Brown", email: "robert@example.com", auth_key: "DEF789", password: "acd" }
     ];
 
     const ws = XLSX.utils.json_to_sheet(template);
@@ -253,6 +257,7 @@ const FacultyDirectory = () => {
             <div style={{ flex: 1 }}><label style={labelStyle}>Email</label><input type="email" style={inputStyle} value={profileForm.email} onChange={e => setProfileForm({ ...profileForm, email: e.target.value })} required={!editId} disabled={editId} /></div>
             <div style={{ width: '150px' }}><label style={labelStyle}>Dept</label><select style={inputStyle} value={profileForm.dept_id} onChange={e => setProfileForm({ ...profileForm, dept_id: e.target.value })} required><option value="">Select</option>{depts.map(d => <option key={d.id} value={d.id}>{d.dept_code}</option>)}</select></div>
             <div style={{ width: '150px' }}><label style={labelStyle}>Auth Key</label><input style={inputStyle} value={profileForm.auth_key} onChange={e => setProfileForm({ ...profileForm, auth_key: e.target.value })} required /></div>
+            <div style={{ width: '150px' }}><label style={labelStyle}>Password</label><input style={inputStyle} value={profileForm.password} onChange={e => setProfileForm({ ...profileForm, password: e.target.value })} required /></div>
             <button type="submit" style={primaryBtn} >{!editId ? 'Save' : 'Update'}</button>
           </form>
         </div>
