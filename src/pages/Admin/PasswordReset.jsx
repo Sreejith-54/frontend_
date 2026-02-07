@@ -5,6 +5,7 @@ const PasswordReset = () => {
     const [email, setEmail]=useState('');
     const [password, setPassword]=useState('');
     const [pop, setPop] = useState(false);
+    const role = localStorage.getItem("role");
 
     const confirm = (e) =>{
         e.preventDefault();
@@ -12,10 +13,17 @@ const PasswordReset = () => {
     }
     const handleSubmit = async(e) =>{
         try{
+          if (role === 'faculty'){
+            await api.post('/api/faculty/reset-password',{
+              email: email,
+              newPassword: password
+            });
+          }else{
             await api.post('/api/admin/reset-password',{
                 email: email,
                 newPassword: password
             });
+          }
             alert("password changed successfully");
             setEmail("");
             setPassword("");
