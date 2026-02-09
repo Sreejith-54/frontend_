@@ -6,7 +6,7 @@ const TimetableConfig = () => {
   const [depts, setDepts] = useState([]);
   const [batches, setBatches] = useState([]);
   const [sections, setSections] = useState([]);
-  
+
   const [selectedDept, setSelectedDept] = useState("");
   const [selectedBatch, setSelectedBatch] = useState("");
   const [selectedSection, setSelectedSection] = useState("");
@@ -87,7 +87,7 @@ const TimetableConfig = () => {
         setCourses(c.data);
         const f = await api.get("/api/admin/faculty");
         setFaculty(f.data);
-      } catch(e) { console.error(e); }
+      } catch (e) { console.error(e); }
     };
     loadBasics();
   }, []);
@@ -150,23 +150,23 @@ const TimetableConfig = () => {
   };
 
   const handleDelete = async (id) => {
-    if(!window.confirm("Remove this slot?")) return;
+    if (!window.confirm("Remove this slot?")) return;
     try {
       await api.post(`/api/admin/delete/timetable/${id}`);
       fetchTimetable();
-    } catch(e) { alert("Error deleting slot"); }
+    } catch (e) { alert("Error deleting slot"); }
   };
 
-  const days = ["Mon","Tue","Wed","Thu","Fri"];
-  const slots = [1,2,3,4,5,6,7,8,9];
-  const semesters = [1,2,3,4,5,6,7,8];
+  const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+  const slots = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+  const semesters = [1, 2, 3, 4, 5, 6, 7, 8];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      
+
       {/* 1. TOP BAR: Context Selection */}
       <div style={topBarStyle}>
-        <span style={{fontWeight:'bold', marginRight:10, fontSize:'14px'}}>Editing For: </span>
+        <span style={{ fontWeight: 'bold', marginRight: 10, fontSize: '14px' }}>Editing For: </span>
 
         {/* Dept */}
         <div style={{ position: "relative" }} ref={deptRef}>
@@ -255,22 +255,22 @@ const TimetableConfig = () => {
 
       {/* 2. SPLIT VIEW */}
       <div style={{ display: "flex", gap: "20px", marginTop: "20px", flex: 1 }}>
-        
+
         {/* LEFT: PREVIEW GRID */}
-        <div style={{ flex: 3, border: "1px solid #ddd", borderRadius: "8px", padding: "15px", overflow: "auto", background:"white" }}>
-          <h4 style={{ marginTop: 0, color: "#AD3A3C", borderBottom:"1px solid #eee", paddingBottom:"10px" }}>Live Preview</h4>
+        <div style={{ flex: 3, border: "1px solid #ddd", borderRadius: "8px", padding: "15px", overflow: "auto", background: "white" }}>
+          <h4 style={{ marginTop: 0, color: "#AD3A3C", borderBottom: "1px solid #eee", paddingBottom: "10px" }}>Live Preview</h4>
           {selectedSection ? (
-             <InteractiveGrid data={timetable} onDelete={handleDelete} />
+            <InteractiveGrid data={timetable} onDelete={handleDelete} />
           ) : (
             <div style={{ textAlign: "center", marginTop: "50px", color: "#999" }}>Select Class to View Timetable</div>
           )}
         </div>
 
         {/* RIGHT: ADD SLOT FORM */}
-        <div style={{ flex: 1, background: "#f9f9f9", padding: "20px", borderRadius: "8px", border: "1px solid #ccc", height:"fit-content" }}>
+        <div style={{ flex: 1, background: "#f9f9f9", padding: "20px", borderRadius: "8px", border: "1px solid #ccc", height: "fit-content" }}>
           <h4 style={{ marginTop: 0 }}>Add New Slot</h4>
           <form onSubmit={handleAddSlot} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            
+
             {/* Day */}
             <label style={labelStyle}>Day</label>
             <div style={{ position: "relative" }} ref={dayRef}>
@@ -285,7 +285,7 @@ const TimetableConfig = () => {
               {dayOpen && (
                 <ul style={dropdownListStyle}>
                   {days.filter(d => d.toLowerCase().includes(daySearch.toLowerCase())).map(d => (
-                    <li key={d} style={dropdownItemStyle} onClick={() => { setFormData({...formData, day: d}); setDaySearch(""); setDayOpen(false); }}>
+                    <li key={d} style={dropdownItemStyle} onClick={() => { setFormData({ ...formData, day: d }); setDaySearch(""); setDayOpen(false); }}>
                       {d}
                     </li>
                   ))}
@@ -307,7 +307,7 @@ const TimetableConfig = () => {
               {slotOpen && (
                 <ul style={dropdownListStyle}>
                   {slots.filter(s => `Slot ${s}`.toLowerCase().includes(slotSearch.toLowerCase())).map(s => (
-                    <li key={s} style={dropdownItemStyle} onClick={() => { setFormData({...formData, slot: s}); setSlotSearch(""); setSlotOpen(false); }}>
+                    <li key={s} style={dropdownItemStyle} onClick={() => { setFormData({ ...formData, slot: s }); setSlotSearch(""); setSlotOpen(false); }}>
                       Slot {s}
                     </li>
                   ))}
@@ -323,14 +323,21 @@ const TimetableConfig = () => {
                 value={courseSearch}
                 onChange={(e) => { setCourseSearch(e.target.value); setCourseOpen(true); }}
                 onFocus={() => setCourseOpen(true)}
-                placeholder={courses.find(c => c.course_code == formData.course_code)?.course_name || "Select Course"}
+                placeholder={
+                  courses.find(c => c.course_code == formData.course_code)
+                    ? `${courses.find(c => c.course_code == formData.course_code).course_code} (${courses.find(c => c.course_code == formData.course_code).course_name})`
+                    : "Select Course"
+                }
                 style={inputStyle}
               />
               {courseOpen && (
                 <ul style={dropdownListStyle}>
-                  {courses.filter(a=> a.dept_id == selectedDept).filter(c => c.course_name.toLowerCase().includes(courseSearch.toLowerCase())).map(c => (
-                    <li key={c.course_code} style={dropdownItemStyle} onClick={() => { setFormData({...formData, course_code: c.course_code}); setCourseSearch(""); setCourseOpen(false); }}>
-                      {c.course_name}
+                  {courses.filter(a => a.dept_id == selectedDept).filter(c =>
+                    c.course_name.toLowerCase().includes(courseSearch.toLowerCase()) ||
+                    c.course_code.toLowerCase().includes(courseSearch.toLowerCase())
+                  ).map(c => (
+                    <li key={c.course_code} style={dropdownItemStyle} onClick={() => { setFormData({ ...formData, course_code: c.course_code }); setCourseSearch(""); setCourseOpen(false); }}>
+                      {c.course_code} ({c.course_name})
                     </li>
                   ))}
                 </ul>
@@ -351,7 +358,7 @@ const TimetableConfig = () => {
               {facultyOpen && (
                 <ul style={dropdownListStyle}>
                   {faculty.filter(f => f.faculty_name.toLowerCase().includes(facultySearch.toLowerCase())).map(f => (
-                    <li key={f.profile_id} style={dropdownItemStyle} onClick={() => { setFormData({...formData, faculty_profile_id: f.profile_id}); setFacultySearch(""); setFacultyOpen(false); }}>
+                    <li key={f.profile_id} style={dropdownItemStyle} onClick={() => { setFormData({ ...formData, faculty_profile_id: f.profile_id }); setFacultySearch(""); setFacultyOpen(false); }}>
                       {f.faculty_name}
                     </li>
                   ))}
@@ -360,7 +367,7 @@ const TimetableConfig = () => {
             </div>
 
             <label style={labelStyle}>Room</label>
-            <input style={inputStyle} placeholder="e.g. 101" value={formData.room} onChange={e=>setFormData({...formData, room: e.target.value})} />
+            <input style={inputStyle} placeholder="e.g. 101" value={formData.room} onChange={e => setFormData({ ...formData, room: e.target.value })} />
 
             <button type="submit" style={btnPrimary}>+ Add to Grid</button>
           </form>
@@ -373,61 +380,61 @@ const TimetableConfig = () => {
 
 // --- INTERACTIVE GRID COMPONENT ---
 const InteractiveGrid = ({ data, onDelete }) => {
-    const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
-    const slots = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-  
-    const getSlotData = (day, slotNum) => data.find(t => t.day === day && t.slot_number === slotNum);
-  
-    return (
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px", tableLayout:"fixed" }}>
-        <thead>
-          <tr>
-            <th style={{...thStyle, width:"50px"}}></th>
-            {slots.map(s => <th key={s} style={thStyle}>{s}</th>)}
-          </tr>
-        </thead>
-        <tbody>
-          {days.map(day => (
-            <tr key={day}>
-              <td style={{ ...tdStyle, fontWeight: "bold", background: "#f0f0f0" }}>{day}</td>
-              {slots.map(slot => {
-                const entry = getSlotData(day, slot);
-                return (
-                  <td key={slot} style={{ ...tdStyle, background: entry ? "#eef" : "#fafafa", position:'relative' }}>
-                    {entry ? (
-                      <div>
-                        <div style={{ fontWeight: "bold", color: "#333", fontSize:"10px", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }} title={entry.course_name}>
-                          {entry.course_name}
-                        </div>
-                        <div style={{ color: "#666", fontSize: "9px" }}>{entry.faculty_name}</div>
-                        <button 
-                            onClick={() => onDelete(entry.id)}
-                            style={{ 
-                                position: "absolute", top: "2px", right: "2px", 
-                                background: "#ff4d4f", color: "white", border: "none", 
-                                borderRadius: "3px", width: "14px", height: "14px", 
-                                fontSize: "10px", lineHeight:"10px", cursor: "pointer", padding:0 
-                            }}
-                            title="Delete Slot"
-                        >×</button>
+  const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+  const slots = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+  const getSlotData = (day, slotNum) => data.find(t => t.day === day && t.slot_number === slotNum);
+
+  return (
+    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px", tableLayout: "fixed" }}>
+      <thead>
+        <tr>
+          <th style={{ ...thStyle, width: "50px" }}></th>
+          {slots.map(s => <th key={s} style={thStyle}>{s}</th>)}
+        </tr>
+      </thead>
+      <tbody>
+        {days.map(day => (
+          <tr key={day}>
+            <td style={{ ...tdStyle, fontWeight: "bold", background: "#f0f0f0" }}>{day}</td>
+            {slots.map(slot => {
+              const entry = getSlotData(day, slot);
+              return (
+                <td key={slot} style={{ ...tdStyle, background: entry ? "#eef" : "#fafafa", position: 'relative' }}>
+                  {entry ? (
+                    <div>
+                      <div style={{ fontWeight: "bold", color: "#333", fontSize: "10px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={entry.course_name}>
+                        {entry.course_name}
                       </div>
-                    ) : (
-                      <span style={{ color: "#eee" }}>+</span>
-                    )}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    );
+                      <div style={{ color: "#666", fontSize: "9px" }}>{entry.faculty_name}</div>
+                      <button
+                        onClick={() => onDelete(entry.id)}
+                        style={{
+                          position: "absolute", top: "2px", right: "2px",
+                          background: "#ff4d4f", color: "white", border: "none",
+                          borderRadius: "3px", width: "14px", height: "14px",
+                          fontSize: "10px", lineHeight: "10px", cursor: "pointer", padding: 0
+                        }}
+                        title="Delete Slot"
+                      >×</button>
+                    </div>
+                  ) : (
+                    <span style={{ color: "#eee" }}>+</span>
+                  )}
+                </td>
+              );
+            })}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
 };
 
 // Styles
 const topBarStyle = { background: "#eee", padding: "10px", borderRadius: "5px", display: "flex", alignItems: "center", gap: "10px" };
 const selectSmall = { padding: "5px", borderRadius: "4px", border: "1px solid #ccc" };
-const inputStyle = { width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px", boxSizing:"border-box" };
+const inputStyle = { width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px", boxSizing: "border-box" };
 const labelStyle = { fontSize: "12px", fontWeight: "bold", color: "#555" };
 const btnPrimary = { padding: "10px", background: "#AD3A3C", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", marginTop: "10px", fontWeight: "bold" };
 const thStyle = { background: "#666", color: "white", padding: "8px", fontSize: "12px", border: "1px solid #ccc" };
